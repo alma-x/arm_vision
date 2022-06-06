@@ -8,7 +8,7 @@ from sensor_msgs.msg import Image as sensImg
 from sensor_msgs.msg import CompressedImage as CsensImg
 from sensor_msgs.msg import CameraInfo
 #frofm sensor_msgs.msg import PointCloud2 as sensPCld
-from ur3_control.srv import aruco_service,aruco_serviceResponse
+from arm_control.srv import aruco_service,aruco_serviceResponse
 
 import cv2 as cv
 import cv2.aruco as aruco
