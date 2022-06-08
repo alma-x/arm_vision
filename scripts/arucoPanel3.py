@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from tkinter import Image
 import rospy
 import numpy as np
 import sys
@@ -270,8 +271,10 @@ topicDict={'raw':("/color/image_raw",
 ################===========================#####################
 if __name__ == '__main__':
     #TODO: FIX CAMERA SELECTION
-    myCamera=camDict['moving']
-    myTopicFull=topicDict['raw']
+    # myCamera=camDict['moving']
+    # myTopicFull=topicDict['raw']
+    myCamera="/camera_image"
+    myTopicFull=("/image_raw",Image,callbackRaw)
     
     #TODO: MOVE WAITING INSIDE THE CLASS
     print('Detector Node for Panal Aruco Visual Markers')
