@@ -15,29 +15,29 @@ bridge=CvBridge()
 def callbackRaw(raw_img):
     #imgDim=(width,heigth)=(data.height, data.width)
     cv_image=bridge.imgmsg_to_cv2(raw_img, desired_encoding='passthrough')
-    cv.imshow("raw image", cv_image)
+    cv2.imshow("raw image", cv_image)
     out.write(cv_image)
-    cv.waitKey(15)    
+    cv2.waitKey(15)    
  
 def callbackCompr(cmpr_img):#(1)
     imgarr = np.fromstring(cmpr_img.data, np.uint8)
     # could possibly try also direct array recast, but already working
-    cv_image=cv.imdecode(imgarr,cv.IMREAD_UNCHANGED)
-    cv.imshow("compressed image", cv_image)
-    cv.waitKey(15)
+    cv_image=cv2.imdecode(imgarr,cv2.IMREAD_UNCHANGED)
+    cv2.imshow("compressed image", cv_image)
+    cv2.waitKey(15)
 
 #def callbackComprDep(cmpr_img):TODO#(1)
 #    imgarr = np.fromstring(cmpr_img.data, np.uint8)
-#    cv_image=cv.imdecode(imgarr,cv.IMREAD_UNCHANGED)
-#    cv.imshow("image", cv_image)
-#    cv.waitKey(15)
+#    cv_image=cv2.imdecode(imgarr,cv2.IMREAD_UNCHANGED)
+#    cv2.imshow("image", cv_image)
+#    cv2.waitKey(15)
     
 #def callbackPCld(pcld_img):#(3)
 ##    no pcl_ros method in python, which worked smootlhy
 ##    alternative is python_pcl
 ##    cv_image=
-#    cv.imshow("point cloud image", cv_image)
-#    cv.waitKey(15)
+#    cv2.imshow("point cloud image", cv_image)
+#    cv2.waitKey(15)
     
 def listener(myCam,(myTop,myType,myCallk),doRecord):
     rospy.init_node('camera_listener', anonymous=True)
@@ -48,7 +48,7 @@ def listener(myCam,(myTop,myType,myCallk),doRecord):
     except KeyboardInterrupt:#what about adding waitKey() here?
         print('Closing')
         out.release()
-    cv.destroyAllWindows()
+    cv2.destroyAllWindows()
     
     
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 #    print("want to record? inserv")
     toggleRecord=1
     if toggleRecord:
-        out = cv.VideoWriter('outpy.avi',cv.VideoWriter_fourcc('M','J','P','G'), 10, (640,480))
+        out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (640,480))
 #    print("select a camera:'moving','fixed'")
 #    myCamera=input()
 #    if myCamera=='':

@@ -118,7 +118,7 @@ def callbackRaw(raw_img):
     
     
     cv_image=bridge.imgmsg_to_cv2(raw_img, desired_encoding='passthrough')
-    cv_gray=cv.cvtColor(cv_image,cv.COLOR_RGB2GRAY)
+    cv_gray=cv2.cvtColor(cv_image,cv2.COLOR_RGB2GRAY)
     
     
     (targetMarkId,targetMarkSize)=tuple(targetList[targetCounter])
@@ -145,8 +145,8 @@ def callbackRaw(raw_img):
         aruco_success=False
         detAruImg=cv_image.copy()#
     #    newSize,_=int(np.shape(detAruImg))
-    #    detAruImg=cv.resize(detAruImg,newSize)
-    cv.imshow('detected markers',detAruImg)
+    #    detAruImg=cv2.resize(detAruImg,newSize)
+    cv2.imshow('detected markers',detAruImg)
 
     msg=bridge_msg()
     msg.success=aruco_success
@@ -155,7 +155,7 @@ def callbackRaw(raw_img):
         msg.y=0.001*msgVector[0]
         msg.z=0.001*msgVector[1]
     pub.publish(msg)
-    key = cv.waitKey(12) & 0xFF# key still unused
+    key = cv2.waitKey(12) & 0xFF# key still unused
 #    if key == 27:# 27:esc, ord('q'):q
 #       exit_somehow()
         
@@ -181,7 +181,7 @@ def listener(myCam,myTop,myType,myCallk):
         rospy.spin()
     except KeyboardInterrupt:#
         print('Closing')
-    cv.destroyAllWindows()
+    cv2.destroyAllWindows()
     
 #---------------------------------------------------------------
     

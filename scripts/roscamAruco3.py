@@ -83,9 +83,9 @@ def callbackRaw(raw_img):
     global msgVector
     global msgRotMatrix
     
-#    cv.imshow("raw image", cv_image)    
+#    cv2.imshow("raw image", cv_image)    
     cv_image=bridge.imgmsg_to_cv2(raw_img, desired_encoding='passthrough')
-    cv_gray=cv.cvtColor(cv_image,cv.COLOR_RGB2GRAY)
+    cv_gray=cv2.cvtColor(cv_image,cv2.COLOR_RGB2GRAY)
     
     selectedDictionary='original'
     loadArucoDict(selectedDictionary)
@@ -115,41 +115,41 @@ def callbackRaw(raw_img):
         aruco_success=False
         detAruImg=cv_image.copy()#
 
-    cv.imshow('detected markers',detAruImg)
+    cv2.imshow('detected markers',detAruImg)
     
-    key = cv.waitKey(12) & 0xFF# key still unused
+    key = cv2.waitKey(12) & 0xFF# key still unused
 #    if key == 27:# 27:esc, ord('q'):q
 #       exit_somehow()
         
 def callbackRawDep(rade_img):
-    #    cv.imshow("raw image", cv_image)    
+    #    cv2.imshow("raw image", cv_image)    
     cv_image=bridge.imgmsg_to_cv2(rade_img, desired_encoding='passthrough')
-    cv.imshow('depth image',cv_image)
-    key = cv.waitKey(12) & 0xFF
+    cv2.imshow('depth image',cv_image)
+    key = cv2.waitKey(12) & 0xFF
     if key == 27:# 27:esc, ord('q'):q
-        cv.destroyWindow('depth image')
+        cv2.destroyWindow('depth image')
     
 def callbackCompr(cmpr_img):#(1)
     imgarr = np.fromstring(cmpr_img.data, np.uint8)
     # could possibly try also direct array recast, but already working
-    cv_image=cv.imdecode(imgarr,cv.IMREAD_UNCHANGED)
+    cv_image=cv2.imdecode(imgarr,cv2.IMREAD_UNCHANGED)
     print('compressed dimension')
     print(cv_image.shape)
-    cv.imshow("compressed image", cv_image)
-    cv.waitKey(15)
+    cv2.imshow("compressed image", cv_image)
+    cv2.waitKey(15)
 
 #def callbackComprDep(cmpr_img):TODO#(1)
 #    imgarr = np.fromstring(cmpr_img.data, np.uint8)
-#    cv_image=cv.imdecode(imgarr,cv.IMREAD_UNCHANGED)
-#    cv.imshow("image", cv_image)
-#    cv.waitKey(15)
+#    cv_image=cv2.imdecode(imgarr,cv2.IMREAD_UNCHANGED)
+#    cv2.imshow("image", cv_image)
+#    cv2.waitKey(15)
     
 #def callbackPCld(pcld_img):#(3)
 ##    no pcl_ros method in python, which worked smootlhy
 ##    alternative is python_pcl
 ##    cv_image=
-#    cv.imshow("point cloud image", cv_image)
-#    cv.waitKey(15)
+#    cv2.imshow("point cloud image", cv_image)
+#    cv2.waitKey(15)
     
 #-----------------------------------------------------------------
 
@@ -200,7 +200,7 @@ def listener(myCam,myTop,myType,myCallk):
         rospy.spin()
     except KeyboardInterrupt:#
         print('Closing')
-    cv.destroyAllWindows()
+    cv2.destroyAllWindows()
     
 #---------------------------------------------------------------
     
