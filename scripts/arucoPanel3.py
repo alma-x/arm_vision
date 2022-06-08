@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
-from tkinter import Image
 import rospy
 import numpy as np
 import sys
 import os
-from sensor_msgs.msg import Image as sensImg
+from sensor_msgs.msg import Image
 from sensor_msgs.msg import CameraInfo
 #from sensor_msgs.msg import PointCloud2 as sensPCld
 
@@ -264,7 +263,7 @@ camDict={'moving':"/camera_image",
             'fixed':"/camera_image_fix"}
 
 topicDict={'raw':("/color/image_raw",
-                    sensImg,
+                   Image,
                     callbackRaw)    
             }   
 

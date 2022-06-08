@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-import cv2 as cv
-#from cv2 import aruco as aruco
-import cv2.aruco as aruco
+import cv2
+from cv2 import aruco as aruco
 #import rospy
 #from std_msgs.msg import String
 #from PIL import Image
 #import matplotlib.pyplot as plt
 import numpy as np
-#from sensor_msgs.msg import Image as sensImg
-#from sensor_msgs.msg import CompressedImage as CsensImg
+#from sensor_msgs.msg import Image asImage
+#from sensor_msgs.msg import CompressedImage
 #frofm sensor_msgs.msg import PointCloud2 as sensPCld
 #from std_msgs.msg import Float64MultiArray
 
@@ -286,7 +285,7 @@ def nsingleAruRelPos(queryImg,corners,Id,markerSize_mm,camera_matrix,camera_dist
 """
 #!/usr/bin/env python
 import cv2 as cv
-import cv2.aruco as aruco
+from cv2 import aruco as aruco
 import numpy as np
 
 

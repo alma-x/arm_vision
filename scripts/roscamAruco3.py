@@ -1,245 +1,477 @@
 #!/usr/bin/env python3
+import cv2
+#from cv2 import aruco as aruco
+from cv2 import aruco as aruco
+#import rospy
+#from std_msgs.msg import String
+#from PIL import Image
+#import matplotlib.pyplot as plt
+import numpy as np
+#from sensor_msgs.msg import Image asImage
+#from sensor_msgs.msg import CompressedImage
+#frofm sensor_msgs.msg import PointCloud2 as sensPCld
+#from std_msgs.msg import Float64MultiArray
 
-import rospy
+
+
+#################### COSMETHIC FUNCTIONS ############################
+
+def IdOverAruco(ids, corners, grayQueryImg):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    arucoIDImg = np.copy(grayQueryImg)
+    # Check if some aruco has been found
+    if ids is not None and len(ids) >= 1:
+        for i, corner in zip(ids, corners):
+            #print("Corners:", corner)
+            cv2.fillPoly(arucoIDImg, corner.astype(int), (230, 230, 230))
+
+            (textX, textY )= np.abs(corner[0][0] + corner[0][2]) / 2
+            textsizeX, textsizeY = cv2.getTextSize(str(i[0]), font, 1, 3)[0]
+            textX = (textX - textsizeX / 2).astype(int)
+            textY = (textY + textsizeY / 2).astype(int)
+            cv2.putText(arucoIDImg, str(i[0]), (textX, textY), font, 1, (0, 0, 0), 2)
+
+    return arucoIDImg
+
+def distOverAruco(distanceMarker, corners, queryImg):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    cv2.fillPoly(queryImg, corners.astype(int), (230, 230, 230))    
+    (textX, textY) = np.abs(corners[0][0] + corners[0][2]) / 2    
+    textsizeX, textsizeY = cv2.getTextSize(str(distanceMarker), font, 1, 3)[0]    
+    textX = (textX - textsizeX / 2).astype(int)
+    textY = (textY + textsizeY / 2).astype(int)    
+    cv2.putText(queryImg, str(distanceMarker), (textX, textY), font, 1, (0, 0, 0), 2)
+    return queryImg
+
+
+#def findRectangles(imgRect, idsR, cornersR):
+#    debug = 0
+#    # Grayscale image is requested for contour recognition
+#    imgRectGray = cv2.cvtColor(imgRect, cv2.COLOR_BGR2GRAY)
+#
+#    # Check if at least one marker has been found
+#    if idsR is None or len(idsR) == 0:
+#        # If no marker detected, exit
+#        print("No marker detected!")
+#        return None
+#
+#    # Print found arucos
+#    if debug:
+#        for i, corner in zip(idsR, cornersR):
+#            print('Detected aruco with ID: {}.'.format(i[0]))
+#
+#    #======== Find contours in image ========
+#        
+#    # The "findContours" function nedd a binary image, so need to threeshold before
+#    #ret, imgThresh = cv2.threshold(imgRectGray, 127, 255, 0)
+#    imgThresh = cv2.adaptiveThreshold(imgRectGray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 51, 2)
+#    contours, hierarchy = cv2.findContours(imgThresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+#
+#    # Identify rectangular contours
+#    rect_cnts = []
+#    areas = []
+#    for cnt in contours:
+#        peri = cv2.arcLength(cnt, True)
+#        approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
+#        #(x, y, w, h) = cv2.boundingRect(cnt)
+#        #ar = w / float(h)
+#        if len(approx) == 4: # shape filtering condition
+#            # Get the area of the rectangle, need to exclude rectangles with area less than the 
+#            # one of the smallest aruco
+#            area = cv2.contourArea(cnt)
+#
+#            # Exclude rectangles with pixel area, due to some threesholding error perhaps
+#            if area >= 5.0:
+#                areas.append(area)
+#                rect_cnts.append(cnt) # Shape is rectangle, add to the valid list
+#    # Now in rect_cnts[] we have only rectangular contours
+#
+#    #======== Discard the contours that do not contain any aruco (multiple markers can be present in the image)
+#
+#    # Make a copy to preserve the original image, draw functions are destructive
+#    imgRectDraw = np.copy(imgRect)
+#
+#    j = 0
+#    in_cnt = [] # dim (2,2) array of markers containing array of contours for each marker
+#    for aruco_n, corner_n in zip(idsR, cornersR): # for every aruco marker in image...
+#        cnt_father = [] # collect contours, for each marker
+#        corner_n = corner_n[0].astype(int) # adjust array dimensionality
+#        if debug:
+#            imgRectDraw = cv2.circle(imgRectDraw, (corner_n[0][0], corner_n[0][1]), 50, (0,0,255), 3)
+#        i=0
+#        for cnt in rect_cnts: # for every rectangular contour...
+#            dist = cv2.pointPolygonTest(cnt, (corner_n[0][0], corner_n[0][1]), True) # Check if top left corner of the aruco
+#            # dist is:
+#            # - dist<0 if point is outside contour
+#            # - dist=0 if point is in the contour itself
+#            # - dist>0 if point is inside
+#            # Note that the ==0 is not exactly zero, can be 0.5, so a threshold is needed
+#            # Check difference in area: must be 10% greater than the one of the aruco
+#            if (dist > 1.) and (areas[i] > cv2.contourArea(corner_n)*1.20): # if the aruco is inside the contour...
+#                cnt_father.append(cnt) # add the contour in list
+#                if debug:
+#                    print("Contour distance:", dist)
+#                    cv2.drawContours(imgRectDraw, [cnt], -1, (0,255,0), 2) # for debug draw the contour found
+#            i+=1
+#        if len(cnt_father) != 0:
+#            in_cnt.append(cnt_father) # check next aruco
+#        
+#    return in_cnt
+    
+
+#def draw_axis_on_marker(queryImg,corners, ids):
+#    
+#    # Create a square on flat plane with dimension of 4,6 cm
+#    marker_square = np.float32([[0, 0, 0], [0, 4.6, 0], [4.6, 4.6, 0], [4.6, 0, 0]])
+#    # Array for drawing the 3 cartesian axes
+#    axis = np.float32([[3,0,0], [0,3,0], [0,0,3]]).reshape(-1,3)
+#    # assuming one marker
+#    the_marker = corners#[0]
+#    # Find the rotation and translation vectors
+#    ret, rvecs, tvecs = cv2.solvePnP(marker_square, the_marker[0], camera_matrix, camera_dist_coefs)
+#
+#    # Project axes points according to camera matrix and distortion coeff
+#    imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, camera_matrix, camera_dist_coefs)
+#    # Draw axes in the corner of the marker
+#    for marker in the_marker:
+#        drawnImg = draw(queryImg, marker, imgpts)
+#
+#    # From rvecs compute the rotation matrix
+#    rotation_matrix = cv2.Rodrigues(rvecs)[0]
+#    # Get the Projection matrix
+#    P = np.hstack((rotation_matrix, tvecs))
+
+    # Compute eulero angles in degree
+#    euler_angles_degrees = - cv2.decomposeProjectionMatrix(P)[6]
+#    euler_angles_radians = euler_angles_degrees * np.pi / 180
+#     print(euler_angles_degrees)
+#
+#    return drawnImg
+    
+   
+def drawSingleAru(queryImg, corners, imgpts):
+    corner = tuple(corners.ravel())
+    queryImg = cv2.line(queryImg, corner, tuple(imgpts[0].ravel()), (255,0,0), 3)
+    queryImg = cv2.line(queryImg, corner, tuple(imgpts[1].ravel()), (0,255,0), 3)
+    queryImg = cv2.line(queryImg, corner, tuple(imgpts[2].ravel()), (0,0,255), 3)
+    return queryImg
+
+
+
+
+# def cut_markers_area(queryImg,corners,rotation_matrix):
+    
+#         rotatedImg = cv2.warpAffine(queryImg, rotation_matrix, _img_rot.shape[1::-1], flags=cv2.INTER_LINEAR)
+#         _extrema = cv2.perspectiveTransform(np.array([maxx,maxy,minx,miny]), _rot_mat)
+                
+#         img_mrk.append(_img_rot[_extrema[0][1]:_extrema[1][1], _extrema[0][0]:_extrema[1][0], :])
+        
+#         i+=1
+#     return img_mrk
+    
+
+########### GEOMETRIC FUNCTIONS ####################
+
+#def computeDistance(imgShape,corners,marker_real_world_mm, debug=0):
+#    # ====== Camera parameters ==========
+#    # Sensor is 5.64mm wide
+#    # Original resolution is 4032x1960
+#    focal_lenght = 3558.572811
+#    # ====== End camera parameters ======
+#
+#    # Size of the square marker
+##     marker_real_world_mm = 46
+#
+##     imgShape = queryImg.shape
+#    
+#    marker_dim_px = np.sqrt((corners[0][0][0][0] - corners[0][0][3][0])**2 + (corners[0][0][0][1] - corners[0][0][3][1])**2)
+#        
+#    distance_mm = marker_real_world_mm * (np.max(imgShape) / 4032) * focal_lenght / marker_dim_px
+#    if debug: print("Distance: {}cm".format(round(distance_mm / 10, 1)))
+#    return distance_mm
+    
+
+def computeDistanceSingle(imgShape,corners,marker_real_world_mm, debug=0):
+    # ====== Camera parameters ==========
+    # Sensor is 5.64mm wide
+    # Original resolution is 4032x1960
+    focal_lenght = 426
+    # ====== End camera parameters ======
+
+    # Size of the square marker
+#     marker_real_world_mm = 46
+
+#     imgShape = queryImg.shape
+    
+    marker_dim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)
+    
+        
+    distance_mm = marker_real_world_mm * (np.max(imgShape) / 640) * focal_lenght / marker_dim_px
+    if debug: print("Distance: {}cm".format(round(distance_mm / 10, 1)))
+    return distance_mm
+    
+
+def singleAruRelPos(queryImg,corners,Id,markerSize_mm,camera_matrix, camera_dist_coefs,
+                    focal_length,superimpAru='none'):
+   
+    imgShape = queryImg.shape
+    
+    markerDim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)
+    distnc_mm = markerSize_mm * (np.max(imgShape) / 640) * focal_length / markerDim_px
+    
+    mrkSiz_cm= round(markerSize_mm/10,1)
+    markerSquare_cm = np.float32([[0, 0, 0], [0, mrkSiz_cm, 0], [mrkSiz_cm, mrkSiz_cm, 0], [mrkSiz_cm, 0, 0]])
+    _, rvecs, tvecs = cv2.solvePnP(markerSquare_cm, corners, camera_matrix, camera_dist_coefs)
+#     rvecs,tvecs,_= aruco.estimatePoseSingleMarkers(corners,markerSize_mm,camera_matrix,camera_dist_coefs)
+#     r & tvects are different from the ones with previous code
+    
+    rotation_matrix = cv2.Rodrigues(rvecs)[0]# From rvecs compute the rotation matrix
+    P = np.hstack((rotation_matrix, 10*tvecs))# Get the Projection matrix
+    
+    # Project axes points according to camera matrix and distortion coeff
+    axis = np.float32([[3,0,0], [0,3,0], [0,0,3]]).reshape(-1,3)# Array for drawing the 3 cartesian axes
+    imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, camera_matrix, camera_dist_coefs)
+    
+#     cv2.drawContours(queryImg, [corners], 0, (0,255,0), 3)#gotta work on this
+    if superimpAru=='distance': queryImg=distOverAruco(round(distnc_mm, 1),corners,queryImg)
+    elif superimpAru=='marker': queryImg=IdOverAruco(Id,corners,queryImg)
+        
+    queryImg = drawSingleAru(queryImg, corners[0][0], imgpts)#this solution works better than the following
+#     queryImg = aruco.drawAxis(queryImg, camera_matrix, camera_dist_coefs, rvecs, tvecs, 2)
+  
+    centerx,centery=np.abs(corners[0][0] + corners[0][2])/2
+    #
+#    (mrkSiz_cm/2,mrkSiz_cm/2)
+#    _, rvecsCent, tvecsCent = cv2.solvePnP([[[mrkSiz_cm/2, mrkSiz_cm/2]]], [[[centerx, centery]]], camera_matrix, camera_dist_coefs)
+#    print('center t vecs',tvecsCent)
+#    euler_angles_degrees = - cv2.decomposeProjectionMatrix(P)[6]
+#    euler_angles_radians = euler_angles_degrees * np.pi / 180
+    
+    queryImg=cv2.circle(queryImg, (int(centerx),int(centery)),5,(255,255,0),-1)    
+    return queryImg,distnc_mm,P
+
+
+
+def nsingleAruRelPos(queryImg,corners,Id,markerSize_mm,camera_matrix,camera_dist_coefs, 
+                     superimpAru='none',tglDrawMark=0,tglDrawCenter=0):
+#    positiion estimation
+    rvecs,tvecs,object_points= aruco.estimatePoseSingleMarkers(corners,markerSize_mm,camera_matrix,camera_dist_coefs)
+    (rvecs - tvecs).any()  # get rid of that nasty numpy value array error
+    
+#    distance [mm]
+    distnc_mm=np.sqrt((tvecs**2).sum())
+#    rotation and projection matrix
+    rotation_matrix = cv2.Rodrigues(rvecs)[0]
+    P = np.hstack((rotation_matrix, np.reshape(tvecs,[3,1])))
+#    euler_angles_degrees = - cv2.decomposeProjectionMatrix(P)[6]
+#    euler_angles_radians = euler_angles_degrees * np.pi / 180
+    
+#    substitute marker with distance of Id
+    if superimpAru=='distance': queryImg=distOverAruco(round(distnc_mm, 1),corners,queryImg)
+    elif superimpAru=='marker': queryImg=IdOverAruco(Id,corners,queryImg)
+#    draws axis half of the size of the marker
+    if tglDrawMark:
+        markerDim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)    
+        aruco.drawAxis(queryImg, camera_matrix, camera_dist_coefs, rvecs, tvecs, int(markerDim_px//4))
+
+    if tglDrawCenter:
+        centerx,centery=np.abs(corners[0][0] + corners[0][2])/2
+        markerDim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)
+        queryImg=cv2.circle(queryImg, (int(centerx),int(centery)),int(markerDim_px/16),(255,255,0),-1)
+        
+    return queryImg,distnc_mm,P
+
+"""
+#!/usr/bin/env python
+import cv2 as cv
+from cv2 import aruco as aruco
 import numpy as np
 
-#from std_msgs.msg import String
-from sensor_msgs.msg import Image as sensImg
-from sensor_msgs.msg import CompressedImage as CsensImg
-from sensor_msgs.msg import CameraInfo
-#frofm sensor_msgs.msg import PointCloud2 as sensPCld
-from arm_control.srv import aruco_service,aruco_serviceResponse
-
-import cv2 as cv
-import cv2.aruco as aruco
-#from cv2 import aruco as aruco
-from cv_bridge import CvBridge
-from roscamLibrary3 import nsingleAruRelPos as singleAruRelPos
-
-#PUBLISHER DI ARRAY:
-#aruco_position_pub = rospy.Publisher('/almax/aruco_target',Float64MultiArray,queue_size=20)
-#array = [69.1,0,1,33,1,1,1,0]
-#robaccia = Float64MultiArray(data=array)
-#aruco_position_pub.publish(robaccia)
-#------------------------------------------------
-
-ARUCO_PARAMETERS = aruco.DetectorParameters_create()
-
-aruLibrary={'original':aruco.DICT_ARUCO_ORIGINAL
-            ,'51000':aruco.DICT_5X5_1000
-            ,'61000':aruco.DICT_6X6_1000
-            ,'71000':aruco.DICT_7X7_1000
-            }
-ARUCO_DICT = aruco.Dictionary_get(aruLibrary['original'])
-
-def loadArucoDict(requestedDict):#TODO
-    global ARUCO_DICT
-    ARUCO_DICT = aruco.Dictionary_get(aruLibrary[requestedDict])
-    
-#----------------------------------------------
-    
-def loadCameraParam(myCam):
-    global cameraMatr
-    global cameraDistCoefs
-    global cameraFocLen
-    
-    print('loading camera parameters...')
-    cameraInfoMsg=rospy.wait_for_message(myCam+'/color/camera_info',CameraInfo)
-    cameraMatr=np.reshape(cameraInfoMsg.K,[3,3])
-    cameraDistCoefs=cameraInfoMsg.D
-    cameraFocLen=np.mean([np.ravel(cameraMatr[0])[0],np.ravel(cameraMatr[1])[1]])
-    
-#------------------------------------------------------------
-    
-aruTargetDict={'cube5s':(582,
-                        40),
-#                'cube5d':(582,
-#                        40),
-#                'cube10d':(582,
-#                        90),
-#                'centrifugaBase':(273,
-#                        100),
-#                  'centrifugaAxial':(429,
-#                        100),
-#                'centrifugaTangential':(221,
-#                        100)
-#                'panelSwitch':(,
-#                        )
-#                'newWord':(wordArucoId,
-#                        wordMarketSize)
-                }
-           
-(targetMarkId,targetMarkSize)=targetMarker=aruTargetDict['cube5s']
-
-#def loadTargetRequest():
-#    selectedTarget=read_somewhere(targetRequestTopic)
-#    (targetMarkId,targetMarkSize)=targetMarker=aruTargetDict[selectedTarget]
-
-#----------------------------------------
-bridge=CvBridge()
- 
-def callbackRaw(raw_img):
-    global aruco_success
-    global msgVector
-    global msgRotMatrix
-    
-#    cv2.imshow("raw image", cv_image)    
-    cv_image=bridge.imgmsg_to_cv2(raw_img, desired_encoding='passthrough')
-    cv_gray=cv2.cvtColor(cv_image,cv2.COLOR_RGB2GRAY)
-    
-    selectedDictionary='original'
-    loadArucoDict(selectedDictionary)
-    
-    detCorners, detIds, _ = aruco.detectMarkers(cv_gray, ARUCO_DICT, parameters=ARUCO_PARAMETERS)
-        
-    if detIds is not None and len(detIds) >= 1: # Check if at least one marker has been found
-        
-        detAruImg = aruco.drawDetectedMarkers(cv_image.copy(), detCorners, borderColor=(0, 255, 0))
-            
-        for mId, aruPoints in zip(detIds, detCorners):
-                
-            detAruImg,aruDistnc,Pmatr=singleAruRelPos(detAruImg,aruPoints,mId,targetMarkSize,
-                                          cameraMatr,cameraDistCoefs,
-                                          tglDrawCenter=0,tglDrawMark=1)
-            rotMatr,tVect=Pmatr[0:3,0:3],Pmatr[0:3,3]
-            
-#            comparison between currently found marker and target
-            if mId==targetMarkId:
-                aruco_success=True
-                msgRotMatrix=rotMatr
-                msgVector=tVect
-            else:
-                aruco_success=False
-    else:
-#        print("no marker detected")
-        aruco_success=False
-        detAruImg=cv_image.copy()#
-
-    cv2.imshow('detected markers',detAruImg)
-    
-    key = cv2.waitKey(12) & 0xFF# key still unused
-#    if key == 27:# 27:esc, ord('q'):q
-#       exit_somehow()
-        
-def callbackRawDep(rade_img):
-    #    cv2.imshow("raw image", cv_image)    
-    cv_image=bridge.imgmsg_to_cv2(rade_img, desired_encoding='passthrough')
-    cv2.imshow('depth image',cv_image)
-    key = cv2.waitKey(12) & 0xFF
-    if key == 27:# 27:esc, ord('q'):q
-        cv2.destroyWindow('depth image')
-    
-def callbackCompr(cmpr_img):#(1)
-    imgarr = np.fromstring(cmpr_img.data, np.uint8)
-    # could possibly try also direct array recast, but already working
-    cv_image=cv2.imdecode(imgarr,cv2.IMREAD_UNCHANGED)
-    print('compressed dimension')
-    print(cv_image.shape)
-    cv2.imshow("compressed image", cv_image)
-    cv2.waitKey(15)
-
-#def callbackComprDep(cmpr_img):TODO#(1)
-#    imgarr = np.fromstring(cmpr_img.data, np.uint8)
-#    cv_image=cv2.imdecode(imgarr,cv2.IMREAD_UNCHANGED)
-#    cv2.imshow("image", cv_image)
-#    cv2.waitKey(15)
-    
-#def callbackPCld(pcld_img):#(3)
-##    no pcl_ros method in python, which worked smootlhy
-##    alternative is python_pcl
-##    cv_image=
-#    cv2.imshow("point cloud image", cv_image)
-#    cv2.waitKey(15)
-    
-#-----------------------------------------------------------------
-
-aruco_success=False
-msgVector=[0,0,0]#np.zeros([1,3])
-msgRotMatrix=[[0,0,0,],[0,0,0],[0,0,0]]#np.zeros([3,3])
-
-        
-tglWristLengthRecovery=1
-# recovered percentage
-recovLenRatio=0.5
-
-def callback_service(req):
-    global aruco_success
-    global msgVector
-    global msgRotMatrix
-#    if aruco_success: print("ARUCO SUCCESS:TRUE")
-    
-    return aruco_serviceResponse(
-        success=aruco_success,
-        x=0.001*msgVector[2] +(recovLenRatio*0.08 if tglWristLengthRecovery else 0),#[m]
-        y=0.001*msgVector[0],   
-        z=0.001*msgVector[1],
-        vector=np.ravel(msgRotMatrix)#flattened array
-        )
 
 
-#NOTE:
-#   tVect       tool0/maniulator e.e reference frame
-#    X              Z
-#    Y              x
-#    Z              Y
-#rotation matrix: tVect=R*tool0_vects
+#################### COSMETHIC FUNCTIONS ############################
+
+def IdOverAruco(ids, corners, grayQueryImg):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    arucoIDImg = np.copy(grayQueryImg)
+    # Check if some aruco has been found
+    if ids is not None and len(ids) >= 1:
+        for i, corner in zip(ids, corners):
+            #print("Corners:", corner)
+            cv2.fillPoly(arucoIDImg, corner.astype(int), (230, 230, 230))
+
+            (textX, textY )= np.abs(corner[0][0] + corner[0][2]) / 2
+            textsizeX, textsizeY = cv2.getTextSize(str(i[0]), font, 1, 3)[0]
+            textX = (textX - textsizeX / 2).astype(int)
+            textY = (textY + textsizeY / 2).astype(int)
+            cv2.putText(arucoIDImg, str(i[0]), (textX, textY), font, 1, (0, 0, 0), 2)
+
+    return arucoIDImg
+
+def distOverAruco(distanceMarker, corners, queryImg):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    cv2.fillPoly(queryImg, corners.astype(int), (230, 230, 230))    
+    (textX, textY) = np.abs(corners[0][0] + corners[0][2]) / 2    
+    textsizeX, textsizeY = cv2.getTextSize(str(distanceMarker), font, 1, 3)[0]    
+    textX = (textX - textsizeX / 2).astype(int)
+    textY = (textY + textsizeY / 2).astype(int)    
+    cv2.putText(queryImg, str(distanceMarker), (textX, textY), font, 1, (0, 0, 0), 2)
+    return queryImg
+
+
+#def findRectangles(imgRect, idsR, cornersR):
+#    debug = 0
+#    # Grayscale image is requested for contour recognition
+#    imgRectGray = cv2.cvtColor(imgRect, cv2.COLOR_BGR2GRAY)
 #
-#        	R= 0 0 1
-#           1 0 0
-#           0 1 0
-#------------------------------------------------------
-
+#    # Check if at least one marker has been found
+#    if idsR is None or len(idsR) == 0:
+#        # If no marker detected, exit
+#        print("No marker detected!")
+#        return None
+#
+#    # Print found arucos
+#    if debug:
+#        for i, corner in zip(idsR, cornersR):
+#            print('Detected aruco with ID: {}.'.format(i[0]))
+#
+#    #======== Find contours in image ========
+#        
+#    # The "findContours" function nedd a binary image, so need to threeshold before
+#    #ret, imgThresh = cv2.threshold(imgRectGray, 127, 255, 0)
+#    imgThresh = cv2.adaptiveThreshold(imgRectGray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 51, 2)
+#    contours, hierarchy = cv2.findContours(imgThresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+#
+#    # Identify rectangular contours
+#    rect_cnts = []
+#    areas = []
+#    for cnt in contours:
+#        peri = cv2.arcLength(cnt, True)
+#        approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
+#        #(x, y, w, h) = cv2.boundingRect(cnt)
+#        #ar = w / float(h)
+#        if len(approx) == 4: # shape filtering condition
+#            # Get the area of the rectangle, need to exclude rectangles with area less than the 
+#            # one of the smallest aruco
+#            area = cv2.contourArea(cnt)
+#
+#            # Exclude rectangles with pixel area, due to some threesholding error perhaps
+#            if area >= 5.0:
+#                areas.append(area)
+#                rect_cnts.append(cnt) # Shape is rectangle, add to the valid list
+#    # Now in rect_cnts[] we have only rectangular contours
+#
+#    #======== Discard the contours that do not contain any aruco (multiple markers can be present in the image)
+#
+#    # Make a copy to preserve the original image, draw functions are destructive
+#    imgRectDraw = np.copy(imgRect)
+#
+#    j = 0
+#    in_cnt = [] # dim (2,2) array of markers containing array of contours for each marker
+#    for aruco_n, corner_n in zip(idsR, cornersR): # for every aruco marker in image...
+#        cnt_father = [] # collect contours, for each marker
+#        corner_n = corner_n[0].astype(int) # adjust array dimensionality
+#        if debug:
+#            imgRectDraw = cv2.circle(imgRectDraw, (corner_n[0][0], corner_n[0][1]), 50, (0,0,255), 3)
+#        i=0
+#        for cnt in rect_cnts: # for every rectangular contour...
+#            dist = cv2.pointPolygonTest(cnt, (corner_n[0][0], corner_n[0][1]), True) # Check if top left corner of the aruco
+#            # dist is:
+#            # - dist<0 if point is outside contour
+#            # - dist=0 if point is in the contour itself
+#            # - dist>0 if point is inside
+#            # Note that the ==0 is not exactly zero, can be 0.5, so a threshold is needed
+#            # Check difference in area: must be 10% greater than the one of the aruco
+#            if (dist > 1.) and (areas[i] > cv2.contourArea(corner_n)*1.20): # if the aruco is inside the contour...
+#                cnt_father.append(cnt) # add the contour in list
+#                if debug:
+#                    print("Contour distance:", dist)
+#                    cv2.drawContours(imgRectDraw, [cnt], -1, (0,255,0), 2) # for debug draw the contour found
+#            i+=1
+#        if len(cnt_father) != 0:
+#            in_cnt.append(cnt_father) # check next aruco
+#        
+#    return in_cnt
     
-def listener(myCam,myTop,myType,myCallk):    
-    rospy.init_node('camera_listener', anonymous=True)
-    loadCameraParam(myCam)
-    print('ready')
-    rospy.Subscriber(myCam+myTop,myType,myCallk,queue_size = 1)
-    rospy.Service('aruco_service', aruco_service, callback_service)
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:#
-        print('Closing')
-    cv2.destroyAllWindows()
+
+def drawSingleAru(queryImg, corners, imgpts):
+    corner = tuple(corners.ravel())
+    queryImg = cv2.line(queryImg, corner, tuple(imgpts[0].ravel()), (255,0,0), 3)
+    queryImg = cv2.line(queryImg, corner, tuple(imgpts[1].ravel()), (0,255,0), 3)
+    queryImg = cv2.line(queryImg, corner, tuple(imgpts[2].ravel()), (0,0,255), 3)
+    return queryImg
+
+
+# def cut_markers_area(queryImg,corners,rotation_matrix):
     
-#---------------------------------------------------------------
+#         rotatedImg = cv2.warpAffine(queryImg, rotation_matrix, _img_rot.shape[1::-1], flags=cv2.INTER_LINEAR)
+#         _extrema = cv2.perspectiveTransform(np.array([maxx,maxy,minx,miny]), _rot_mat)
+                
+#         img_mrk.append(_img_rot[_extrema[0][1]:_extrema[1][1], _extrema[0][0]:_extrema[1][0], :])
+        
+#         i+=1
+#     return img_mrk
     
+
+########### GEOMETRIC FUNCTIONS ####################
+ 
+
+def singleAruRelPos(queryImg,corners,Id,markerSize_mm,camera_matrix,camera_dist_coefs, 
+                     superimpAru='none',tglDrawMark=0,tglDrawCenter=0):
+#    positiion estimation
+    rvecs,tvecs= aruco.estimatePoseSingleMarkers(corners,markerSize_mm,camera_matrix,camera_dist_coefs)
+    (rvecs - tvecs).any()  # get rid of that nasty numpy value array error
     
-camDict={'moving':"/camera_image",
-            'fixed':"/camera_image_fix"}
-
-topicDict={'raw compressed':("/color/image_raw/compressed",
-                             CsensImg,
-                             callbackCompr),
-#                'raw depth':("/color/image_raw/compressedDepth",
-#                             CsensImg,
-#                             callbackComprDep),
-#                'point cloud':("/depth/color/points",
-#                               sensPCld,
-#                               callbackPCld),
-            'raw depth': ("/depth/image_rect_raw",
-                    sensImg,
-                    callbackRawDep),
-            'raw':("/color/image_raw",
-                    sensImg,
-                    callbackRaw)    
-            }   
-
-if __name__ == '__main__':
-    myCamera=camDict['fixed']
-    myTopicFull=topicDict['raw']
+#    distance [mm]
+    distnc_mm=np.sqrt((tvecs**2).sum())
+#    rotation and projection matrix
+    rotation_matrix = cv2.Rodrigues(rvecs)[0]
+    P = np.hstack((rotation_matrix, np.reshape(tvecs,[3,1])))
+#    euler_angles_degrees = - cv2.decomposeProjectionMatrix(P)[6]
+#    euler_angles_radians = euler_angles_degrees * np.pi / 180
     
-    print('connecting to:'+myCamera+myTopicFull[0]+'...')
-    listener(myCamera,myTopicFull[0],myTopicFull[1],myTopicFull[2])
+#    substitute marker with distance of Id
+    if superimpAru=='distance': queryImg=distOverAruco(round(distnc_mm, 1),corners,queryImg)
+    elif superimpAru=='id': queryImg=IdOverAruco(Id,corners,queryImg)
+#    draws axis half of the size of the marker
+    if tglDrawMark:
+        markerDim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)    
+        aruco.drawAxis(queryImg, camera_matrix, camera_dist_coefs, rvecs, tvecs, int(markerDim_px//4))
+
+    if tglDrawCenter:
+        centerx,centery=np.abs(corners[0][0] + corners[0][2])/2
+        markerDim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)
+        queryImg=cv2.circle(queryImg, (int(centerx),int(centery)),int(markerDim_px/16),(255,255,0),-1)
+        
+    return queryImg,distnc_mm,P
 
 
+##################################
+#   bibliography
+#    https://docs.opencv2.org/4.2.0/d5/dae/tutorial_aruco_detection.html
+#    for the parameters list
 
-#bibliography
-#     (1)
-#compressed images
-#cast in np array and cv2.imdecode
-#http://wiki.ros.org/rospy_tutorials/Tutorials/WritingImagePublisherSubscriber
-#    (2)
-#https://answers.ros.org/question/249775/display-compresseddepth-image-python-cv2/
-#   (3)
-#https://strawlab.github.io/python-pcl/
+
+############################
+#     old sharp code
+        
+#    marker_dim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)
+#    
+#    distance_mm = marker_real_world_mm * (np.max(imgShape) / sensorWidth) * focal_lenght / marker_dim_px
+    
+#    markerSquare_cm = np.float32([[0, 0, 0], [0, mrkSiz_cm, 0], [mrkSiz_cm, mrkSiz_cm, 0], [mrkSiz_cm, 0, 0]])
+#    _, rvecs, tvecs = cv2.solvePnP(markerSquare_cm, corners, camera_matrix, camera_dist_coefs)
+#    
+#    axis = np.float32([[3,0,0], [0,3,0], [0,0,3]]).reshape(-1,3)# Array for drawing the 3 cartesian axes
+#    imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, camera_matrix, camera_dist_coefs)
+#    
+#    centerx,centery=np.abs(corners[0][0] + corners[0][2])/2
+"""
+##################################
+#   bibliography
+#    https://docs.opencv2.org/4.2.0/d5/dae/tutorial_aruco_detection.html
+#    for the parameters list

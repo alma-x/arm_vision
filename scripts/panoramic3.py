@@ -3,7 +3,7 @@
 import rospy
 import numpy as np
 
-from sensor_msgs.msg import Image as sensImg
+from sensor_msgs.msg import Image asImage
 from sensor_msgs.msg import CameraInfo
 #frofm sensor_msgs.msg import PointCloud2 as sensPCld
 
@@ -12,7 +12,7 @@ from arm_control.srv import cv_server,cv_serverResponse, cv_serverRequest
 from arm_control.msg import cv_to_bridge as bridge_msg
 
 import cv2 as cv
-import cv2.aruco as aruco
+from cv2 import aruco as aruco
 #from cv2 import aruco as aruco
 from cv_bridge import CvBridge
 from roscamLibrary3 import nsingleAruRelPos as singleAruRelPos
@@ -190,7 +190,7 @@ camDict={'moving':"/camera_image",
             'fixed':"/camera_image_fix"}
 
 topicDict={'raw':("/color/image_raw",
-                    sensImg,
+                   Image,
                     callbackRaw)    
             }   
 

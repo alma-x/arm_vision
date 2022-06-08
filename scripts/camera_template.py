@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-import cv2 as cv
+import cv2
 import rospy
 #from std_msgs.msg import String
 #from PIL import Image
 #import matplotlib.pyplot as plt
 import numpy as np
-from sensor_msgs.msg import Image as sensImg
-from sensor_msgs.msg import CompressedImage as CsensImg
+from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 #frofm sensor_msgs.msg import PointCloud2 as sensPCld
 
 from cv_bridge import CvBridge
@@ -42,7 +42,7 @@ def callbackCompr(cmpr_img):#(1)
 def listener(myCam,(myTop,myType,myCallk),doRecord):
     rospy.init_node('camera_listener', anonymous=True)
     rospy.Subscriber(myCam+myTop,myType,myCallk,queue_size = 1)
-#    rospy.Subscriber("/camera_image_fix/color/image_raw/compressed",CsensImg,callbackCompr,queue_size = 1)
+#    rospy.Subscriber("/camera_image_fix/color/image_raw/compressed",Cfrom cv2 import aruco as arucog,callbackCompr,queue_size = 1)
     try:
         rospy.spin()
     except KeyboardInterrupt:#what about adding waitKey() here?
@@ -56,19 +56,19 @@ camDict={'moving':"/camera_image",
             'fixed':"/camera_image_fix"}
 
 topicDict={'raw compressed':("/color/image_raw/compressed",
-                             CsensImg,
+                             CompressedImage,
                              callbackCompr),
 #                'raw depth':("/color/image_raw/compressedDepth",
-#                             CsensImg,
+#                             CompressedImage,
 #                             callbackComprDep),
 #                'point cloud':("/depth/color/points",
 #                               sensPCld,
 #                               callbackPCld),
             'raw depth': ("/depth/image_rect_raw",
-                    sensImg,
+                   Image,
                     callbackRaw),
             'raw':("/color/image_raw",
-                    sensImg,
+                   Image,
                     callbackRaw)    
             }   
 
