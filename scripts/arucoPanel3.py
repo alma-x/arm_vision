@@ -68,6 +68,20 @@ def loadCameraParam(myCam):
 #               'panelSwitch2':{'id':2,'size':50}}
 
 #TODO: MAKE THIS INTO A DICTIONARY AS ABOVE
+# targetList=[[1,50],
+#             [2,50],
+#             [3,50],
+#             [4,50],
+#             [5,50],
+#             [6,50],
+#             [7,50],
+#             [8,50],
+#             [9,50],
+#             [10,40],
+#             [11,50],
+#             [12,50],
+#             [13,40],
+#             [14,50]]
 targetList=[[1,50],
             [2,50],
             [3,50],
@@ -133,14 +147,17 @@ def callbackRaw(raw_img):
     # except CvBridgeError: ...
 
     msg=bridge_msg()
+    # msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False]
     msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False]
+    
+    #TODO: WHY targetCounter goes above len(targetList) even if forced otherwise?
     (targetMarkId,targetMarkSize)=tuple(targetList[targetCounter])
     detCorners, detIds, _ = aruco.detectMarkers(cv_gray, ARUCO_DICT, parameters=ARUCO_PARAMETERS)
         
     if detIds is not None and len(detIds) >= 1: # Check if at least one marker has been found
         
         detAruImg = aruco.drawDetectedMarkers(cv_image.copy(), detCorners, borderColor=(0, 255, 0))
-           
+        
         aruco_success=False 
 
         for mId, aruPoints in zip(detIds, detCorners):
@@ -148,7 +165,7 @@ def callbackRaw(raw_img):
                 msg.aruco_found[int(mId)]=True
             if mId==targetList[targetCounter][0]:    
                 detAruImg,aruDistnc,Pmatr=singleAruRelPos(detAruImg,aruPoints,mId,targetMarkSize,
-                                              cameraMatr,cameraDistCoefs,tglDrawMark=1)
+                                            cameraMatr,cameraDistCoefs,tglDrawMark=1)
                 
                 rotMatr,tVect=Pmatr[0:3,0:3],Pmatr[0:3,3]
                 msgRotMatrix=rotMatr
@@ -168,6 +185,7 @@ def callbackRaw(raw_img):
     cv2.imshow('detected markers',detAruImg)
 
     msg.success=aruco_success
+
     msg.id_aruco=targetCounter+1
 
     if msg.success:
@@ -177,6 +195,7 @@ def callbackRaw(raw_img):
         msg.z=0.001*msgVector[2]
         msg.vector=msgRotMatrix.flatten()
         #print(msg.vector)
+    
     pub.publish(msg)
     key = cv2.waitKey(12) & 0xFF
     if key == ord('q'):
