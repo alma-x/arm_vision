@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import cv2
-#from cv2 import aruco as aruco
 from cv2 import aruco as aruco
-#import rospy
+import rospy
 #from std_msgs.msg import String
 #from PIL import Image
 #import matplotlib.pyplot as plt
 import numpy as np
-#from sensor_msgs.msg import Image asImage
+from sensor_msgs.msg import Image 
 #from sensor_msgs.msg import CompressedImage
 #frofm sensor_msgs.msg import PointCloud2 as sensPCld
 #from std_msgs.msg import Float64MultiArray
