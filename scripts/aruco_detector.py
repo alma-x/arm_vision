@@ -54,11 +54,14 @@ from roscamLibrary3 import nsingleAruRelPos as singleAruRelPos
 class MarkerDetector:
     def __init__(self) -> None:
 
-        self.MAX_VISIBLE_MARKERS=14        
+        self.MAX_VISIBLE_MARKERS=14
+        self.detected_markers_count=0        
         self.bridge_topic='aruco_bridge_opencv'
         self.markers_topic='?'
+        self.input_topic=""
         self.bridge_pub = rospy.Publisher(self.bridge_topic, bridge_msg, queue_size=1)
         self.markers_pub=rospy.Publisher(self.markers_topic,Float32MultiArray,queue_size=self.MAX_VISIBLE_MARKERS)
+        self.input_sub=rospy.Subscriber(self.input_topic,Image,queue_size=1)
         self.do_exit=False
 
         self.ARUCO_PARAMS = aruco.DetectorParameters_create()
@@ -70,13 +73,15 @@ class MarkerDetector:
                                     ,'71000':aruco.DICT_7X7_1000
                                     }
 
-        self.SELECTED_DICT='original'
-        self.loadArucoDict(self.SELECTED_DICT)
+        self.DEFAULT_SELECTED_DICT='original'
+        self.loadArucoDict(self.DEFAULT_SELECTED_DICT)
 
         self.CAMERA_MATR=np.ndarray
         self.CAMERA_DISTORSION_COEFS=np.ndarray
         self.CAMERA_FOCAL_LEN=np.ndarray
-
+        self.target_id=int
+        self.target_size=float
+        self.cvbridge=CvBridge()
 
 
     def loadArucoDict(self,dict_name):
@@ -106,151 +111,80 @@ class MarkerDetector:
         self.CAMERA_DISTORSION_COEFS=info_msg.D
         self.CAMERA_FOCAL_LEN=np.mean([np.ravel(self.CAMERA_MATR[0])[0],np.ravel(self.CAMERA_MATR[1])[1]])
     
-#------------------------------------------------------------
-panel_aruco_dict={  'switch1':{'id':1,'size':50},
-                    'switch2':{'id':2,'size':50},
-                    'switch3':{'id':3,'size':50},
-                    'switch4':{'id':4,'size':50},
-                    'switch5':{'id':5,'size':50},
-                    'switch6':{'id':6,'size':50},
-                    'switch7':{'id':7,'size':50},
-                    'switch8':{'id':8,'size':50},
-                    'switch9':{'id':9,'size':50},
-                }
 
-#TODO: MAKE THIS INTO A DICTIONARY AS ABOVE
-# targetList=[[1,50],
-#             [2,50],
-#             [3,50],
-#             [4,50],
-#             [5,50],
-#             [6,50],
-#             [7,50],
-#             [8,50],
-#             [9,50],
-#             [10,40],
-#             [11,50],
-#             [12,50],
-#             [13,40],
-#             [14,50]]
-targetList=[[1,50],
-            [2,50],
-            [3,50],
-            [4,50],
-            [5,50],
-            [6,50],
-            [7,50],
-            [8,50],
-            [9,50],
-            [10,40],
-            [11,50],
-            [12,50],
-            [13,40],
-            [14,50],
-            [102,40],
-            [104,40],
-            [106,40],
-            [108,40]]
-aruco_success=False
-
-#TODO: FOLLOWING TARGET STRING DOES NOT WORK
-#targetList=['panelSwitch8','panelSwitch7','panelSwitch6','panelSwitch5','panelSwitch4'
-#            ,'panelSwitch3','panelSwitch2','panelSwitch1']
-
-#TODO? WHY IS A TARGET STRING NEEDED?
-targetList=[[102,40],[104,40],[106,40],[108,40]]
-targetCounter=0
-targetListLen=len(targetList)
-remaining_targets=targetListLen
-
-#global findNewTarget
-#findNewTarget=1
-
-#def receiveTargetRequest():
-#    selectedTarget=read_somewhere(targetRequestTopic)
-#    (targetMarkId,targetMarkSize)=loadTargetData(selectedTarget)
-
-#def loadTargetData(requestString):
-#    return aruTargetDict[requestString]
-
-#TODO? IS global NEEDED HERE?
-global targetMarkId,targetMarkSize
-
-#----------------------------------------
-bridge=CvBridge()
  
-def callbackRaw(raw_img):
-    global aruco_success
-    global msgVector
-    global msgRotMatrix
-    global targetCounter
-    global findNewTarget
-    global remaining_targets
-    global bool_exit
+    def cameraCallback(img_msg):
+        global aruco_success
+        global msgVector
+        global msgRotMatrix
+        global targetCounter
+        global findNewTarget
+        global remaining_targets
+        global bool_exit
 
-    if bool_exit:
-        cv2.destroyAllWindows()
-        os._exit(os.EX_OK)
+        if bool_exit:
+            cv2.destroyAllWindows()
+            os._exit(os.EX_OK)
 
-    # TODO: ADD try:
-    cv_image=bridge.imgmsg_to_cv2(raw_img, desired_encoding='passthrough')
-    cv_gray=cv2.cvtColor(cv_image,cv2.COLOR_RGB2GRAY)
-    # except CvBridgeError: ...
+        # TODO: ADD try:
+        cv_image=bridge.imgmsg_to_cv2(raw_img, desired_encoding='passthrough')
+        cv_gray=cv2.cvtColor(cv_image,cv2.COLOR_RGB2GRAY)
+        # except CvBridgeError: ...
 
-    msg=bridge_msg()
-    # msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False]
-    msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False]
-    
-    #TODO: WHY targetCounter goes above len(targetList) even if forced otherwise?
-    (targetMarkId,targetMarkSize)=tuple(targetList[targetCounter])
-    detCorners, detIds, _ = aruco.detectMarkers(cv_gray, ARUCO_DICT, parameters=ARUCO_PARAMETERS)
+        msg=bridge_msg()
+        # msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False]
+        msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False]
         
-    if detIds is not None and len(detIds) >= 1: # Check if at least one marker has been found
+        #TODO: WHY targetCounter goes above len(targetList) even if forced otherwise?
+        (targetMarkId,targetMarkSize)=tuple(targetList[targetCounter])
+        detCorners, detIds, _ = aruco.detectMarkers(cv_gray, ARUCO_DICT, parameters=ARUCO_PARAMETERS)
+            
+        if detIds is not None and len(detIds) >= 1: # Check if at least one marker has been found
+            
+            detAruImg = aruco.drawDetectedMarkers(cv_image.copy(), detCorners, borderColor=(0, 255, 0))
+            
+            aruco_success=False 
+
+            for mId, aruPoints in zip(detIds, detCorners):
+                if len(msg.aruco_found)>int(mId):
+                    msg.aruco_found[int(mId)]=True
+                if mId==targetList[targetCounter][0]:    
+                    detAruImg,aruDistnc,Pmatr=singleAruRelPos(detAruImg,aruPoints,mId,targetMarkSize,
+                                                cameraMatr,cameraDistCoefs,tglDrawMark=1)
+                    
+                    rotMatr,tVect=Pmatr[0:3,0:3],Pmatr[0:3,3]
+                    msgRotMatrix=rotMatr
+                    msgVector=tVect
+                    
+                    aruco_success=True
+                    # remaining_targets=targetListLen-targetCounter-1
+                    #if targetCounter<targetListLen-1:
+                    #    targetCounter+=1
+                    
+        else:
+            aruco_success=False
+            detAruImg=cv_image.copy()
+
+        #    newSize,_=int(np.shape(detAruImg))
+        #    detAruImg=cv2.resize(detAruImg,newSize)
+        cv2.imshow('detected markers',detAruImg)
+
+        msg.success=aruco_success
+
+        msg.id_aruco=targetCounter+1
+
+        if msg.success:
+            #msg.x=0.001*msgVector[2] +(recovLenRatio*0.08 if tglWristLengthRecovery else 0)
+            msg.x=0.001*msgVector[0]
+            msg.y=0.001*msgVector[1]
+            msg.z=0.001*msgVector[2]
+            msg.vector=msgRotMatrix.flatten()
+            #print(msg.vector)
         
-        detAruImg = aruco.drawDetectedMarkers(cv_image.copy(), detCorners, borderColor=(0, 255, 0))
-        
-        aruco_success=False 
-
-        for mId, aruPoints in zip(detIds, detCorners):
-            if len(msg.aruco_found)>int(mId):
-                msg.aruco_found[int(mId)]=True
-            if mId==targetList[targetCounter][0]:    
-                detAruImg,aruDistnc,Pmatr=singleAruRelPos(detAruImg,aruPoints,mId,targetMarkSize,
-                                            cameraMatr,cameraDistCoefs,tglDrawMark=1)
-                
-                rotMatr,tVect=Pmatr[0:3,0:3],Pmatr[0:3,3]
-                msgRotMatrix=rotMatr
-                msgVector=tVect
-                
-                aruco_success=True
-                # remaining_targets=targetListLen-targetCounter-1
-                #if targetCounter<targetListLen-1:
-                #    targetCounter+=1
-                
-    else:
-        aruco_success=False
-        detAruImg=cv_image.copy()
-
-    #    newSize,_=int(np.shape(detAruImg))
-    #    detAruImg=cv2.resize(detAruImg,newSize)
-    cv2.imshow('detected markers',detAruImg)
-
-    msg.success=aruco_success
-
-    msg.id_aruco=targetCounter+1
-
-    if msg.success:
-        #msg.x=0.001*msgVector[2] +(recovLenRatio*0.08 if tglWristLengthRecovery else 0)
-        msg.x=0.001*msgVector[0]
-        msg.y=0.001*msgVector[1]
-        msg.z=0.001*msgVector[2]
-        msg.vector=msgRotMatrix.flatten()
-        #print(msg.vector)
-    
-    pub.publish(msg)
-    key = cv2.waitKey(12) & 0xFF
-    if key == ord('q'):
-      rospy.on_shutdown()
+        pub.publish(msg)
+        key = cv2.waitKey(12) & 0xFF
+        if key == ord('q'):
+            rospy.on_shutdown()
         
     
 #-----------------------------------------------------------------
@@ -360,4 +294,31 @@ http://wiki.ros.org/rospy_tutorials/Tutorials/WritingImagePublisherSubscriber
 https://answers.ros.org/question/249775/display-compresseddepth-image-python-cv2/
   (3)
 https://strawlab.github.io/python-pcl/
+
+
+TODO: what about subs aruco.DICT... name with my convention 'original'
+self.used_panel_arucos_dict={'button 1':         {'id':1,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'button 2':         {'id':2,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'button 3':         {'id':3,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'button 4':         {'id':4,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'button 5':         {'id':5,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'button 6':         {'id':6,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'button 7':         {'id':7,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'button 8':         {'id':8,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'button 9':         {'id':9,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'imu':              {'id':10,'size':40,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'imu storage':      {'id':11,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'inspection panel': {'id':9,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'lid':              {'id':9,'size':40,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
+                             'lid storage':      {'id':9,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL}
+                            }
+
+def receiveTargetRequest():
+   selected_target=readSomewhere(target_request_topic)
+   (target_id,target_size)=loadTargetData(selected_target)
+
+def loadTargetData(selected_target):
+   return used_panel_arucos_dict[requestString]
+
+
 """
