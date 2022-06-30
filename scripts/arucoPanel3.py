@@ -59,6 +59,7 @@ def loadCameraParam(myCam):
     # cameraInfoMsg=rospy.wait_for_message(myCam+'/color/camera_info',CameraInfo)
     cameraInfoMsg=rospy.wait_for_message(myCam+'/camera_info',CameraInfo)
     cameraMatr=np.reshape(cameraInfoMsg.K,[3,3])
+    print(type(cameraMatr))
     cameraDistCoefs=cameraInfoMsg.D
     cameraFocLen=np.mean([np.ravel(cameraMatr[0])[0],np.ravel(cameraMatr[1])[1]])
     
