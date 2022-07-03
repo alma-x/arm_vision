@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+
+<!-- ARG+PARAM: camera name and topic
+    ?automatically find thosa data? -->
+
+<!-- NODES -->
+<!--NODO0: preprocessing image-->
+ 
+<!-- NODE1: find arucos, 
+                cosmethic superimpose to image (TODO)
+             -->
+        <node 
+                name="detector_aruco" 
+                pkg="arm_vision" 
+                type="detector_aruco.py" 
+                respawn="true" 
+                output="screen"
+                launch-prefix="xterm -e"
+        ></node>
+    
+<!-- NODE2: bridge for requests and compute absolute position of markers
+            ? which is the best way to publish position data: TF, vectors ? -->
+
+        <!-- <node 
+                name="inquirer_aruco" 
+                pkg="arm_vision" 
+                type="inquirer_aruco.py" 
+                respawn="true" 
+                output="screen"
+                launch-prefix="xterm -e"
+        ></node> -->
+<!--NODE3: collision server shall be included in another package ! -->
+ 
+</launch>

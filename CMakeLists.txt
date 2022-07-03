@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   message_generation
+  geometry_msgs
   #time
 )
 
@@ -54,11 +55,12 @@ add_library(time STATIC IMPORTED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  ArucoPose.msg
+  ArucoPoses.msg
+
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -75,10 +77,12 @@ add_library(time STATIC IMPORTED)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   sensor_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+  geometry_msgs
+  #geometry_msgs/PoseStamped
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -110,10 +114,8 @@ add_library(time STATIC IMPORTED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ercam1
-#  CATKIN_DEPENDS cv2 matplotlib numpy roscpp rospy sensor_msgs std_msgs time
-#  DEPENDS system_lib
+  INCLUDE_DIRS
+  CATKIN_DEPENDS message_runtime
 )
 
 ###########
