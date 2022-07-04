@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from ctypes.wintypes import SMALL_RECT
 import rospy
 import numpy as np
 from sensor_msgs.msg import Image
@@ -116,8 +117,7 @@ def eulerFromRotatioMatrix(R):
     return np.array([teta_x,teta_y,teta_z])   
 
 def cameraCallback(raw_img):
-    global msgVector
-    global msgRotMatrix
+    SMALLER_DISPLAY=True
     global bool_exit
     global aruco_pub
     aruco_msg=ArucoPoses()
@@ -139,7 +139,7 @@ def cameraCallback(raw_img):
                                                 cameraMatr,cameraDistCoefs,tglDrawMark=1)
                     
                     rotMatr,tVect=Pmatr[0:3,0:3],Pmatr[0:3,3]
-                    tVect=np.round(tVect,3)
+                    tVect=np.round(1E-3*tVect,5)
 
                     #TODO: RECOVER DISTANCE CAMERA-GRIPPER
                     # ALSO REDEFINE DIMENSIONS IN APPROPRIATE REFERENCE FRAME'S AXIS
@@ -159,8 +159,9 @@ def cameraCallback(raw_img):
                     aruco_msg.ids.append(int(mId))
                     aruco_msg.poses.append(aruco_pose)
                 
-                aruco_img_size=detAruImg.shape[:2]
-                detAruImg=cv2.resize(detAruImg,(aruco_img_size[1]//2,aruco_img_size[0]//2))
+                if SMALLER_DISPLAY:
+                    aruco_img_size=detAruImg.shape[:2]
+                    detAruImg=cv2.resize(detAruImg,(aruco_img_size[1]//2,aruco_img_size[0]//2))
                 display_image=detAruImg
         else:
             cv_img_size=cv_image.shape[:2]
@@ -170,6 +171,7 @@ def cameraCallback(raw_img):
         cv2.imshow('detected markers',display_image)
 
     except CvBridgeError: pass
+
     aruco_pub.publish(aruco_msg)
 
     kk = cv2.waitKey(12) & 0xFF
