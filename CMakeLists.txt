@@ -59,6 +59,7 @@ add_message_files(
   FILES
   ArucoPose.msg
   ArucoPoses.msg
+  FoundArucos.msg
 
 )
 

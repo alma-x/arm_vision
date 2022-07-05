@@ -2,27 +2,26 @@
 
 import rospy
 import numpy as np
-from sensor_msgs.msg import JointState,CameraInfo
-from geometry_msgs.msg import Pose
+# from sensor_msgs.msg import JointState
+# from geometry_msgs.msg import Pose
 # from tf.transformations import quaternion_from_euler
-from arm_vision.msg import ArucoPoses
+from arm_vision.msg import ArucoPoses,FoundArucos
 import tf2_ros
-from tf2_msgs.msg import TFMessage
-from tf import transformations
+# from tf2_msgs.msg import TFMessage
+# from tf import transformations
 from geometry_msgs.msg import TransformStamped
 
-# CAMERA_MATR=np.ndarray
-# CAMERA_DIST_COEFF=np.ndarray
-# CAMERA_FOCAL_LEN=np.ndarray
 
 aruco_topic='/aruco_poses'
 base_frame='base_link'
 camera_frame='camera_link'
 # joint_states_topic='/joint_states'
+findings_topic='/found_arucos'
 
 tf_buffer=None
 tf_listener=None
 tf_broadcaster=None
+findings_pub=None
 # joint_velocities=[]
 
 
@@ -114,6 +113,12 @@ def distanceTooBig():
     return False
 
 
+def assembleFindingsMessage():
+    msg=FoundArucos()
+    for _,current_finding in found_arucos:
+        msg.findings.append(current_finding)
+    return msg
+
 def broadcastTFMarkers(_):
     global tf_broadcaster
     global found_arucos
@@ -152,6 +157,9 @@ def broadcastTFMarkers(_):
             except (tf2_ros.LookupException, \
                 tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 pass
+    findings_msg=assembleFindingsMessage()
+    findings_pub.publish(findings_msg)
+    
 
 #TODO still does not work well, as for now i will simply broadcast tf when the robot is moving slow
 # def refineTFMarkers(_):
@@ -168,7 +176,7 @@ def broadcastTFMarkers(_):
 #             tf2_ros.ExtrapolationException): pass
 #----------------------------------------------------------
 
-def arucoInquirer():
+def arucoReferencer():
     # global joint_velocities
     # joint_velocities=np.zeros(\
     #     (50,len(rospy.wait_for_message(joint_states_topic,JointState).velocity)))
@@ -183,6 +191,9 @@ def arucoInquirer():
     tf_listener=tf2_ros.TransformListener(tf_buffer,queue_size=None)
     #COULD ADD WAIT_FOR_SERVICE/_FOR_SERVER TO PREVENT ERRORS
     tf_broadcaster=tf2_ros.StaticTransformBroadcaster()
+
+    global findings_pub
+    findings_pub=rospy.Publisher(findings_topic,FoundArucos,queue_size=1)
 
     TIMER_DURATION=rospy.Duration(nsecs=2E6)
     tf_timer=rospy.Timer(TIMER_DURATION,broadcastTFMarkers)
@@ -199,7 +210,7 @@ if __name__=='__main__':
         format(node_name))
 
     rospy.init_node(node_name,anonymous=False)
-    arucoInquirer()
+    arucoReferencer()
 
     try:
         rospy.spin()
