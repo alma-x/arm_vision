@@ -19,13 +19,13 @@
                 launch-prefix="xterm -e"
         ></node>
     
-<!-- NODE2: bridge for requests and compute absolute position of markers
+<!-- NODE2: compute absolute position of markers
             ? which is the best way to publish position data: TF, vectors ? -->
 
         <!-- <node 
-                name="inquirer_aruco" 
+                name="referencer_aruco" 
                 pkg="arm_vision" 
-                type="inquirer_aruco.py" 
+                type="referencer_aruco.py" 
                 respawn="true" 
                 output="screen"
                 launch-prefix="xterm -e"
