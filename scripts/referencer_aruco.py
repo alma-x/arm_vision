@@ -90,15 +90,19 @@ def getVelocities(js_msg):
     current_velocity=js_msg.velocity
     joint_velocities=np.roll(joint_velocities,1)
     joint_velocities[0]=current_velocity
-    
+
 
 
 def velocityTooBig():
     for current_component in range(len(joint_velocities.T)):
-        current_speed=joint_velocities.T[current_component]
+        current_speed=abs(joint_velocities.T[current_component])
         current_max=np.max(current_speed)
-        current_mean=np.mean(current_speed[np.nonzero(current_speed)])
-        if current_max>1.2*current_mean: return True
+        current_mean=\
+            np.mean(current_speed[np.nonzero(current_speed)]) if \
+            current_speed[np.nonzero(current_speed)] else 0
+        if current_max>1.5*current_mean or np.isnan(current_mean):
+            print('pianooo')
+            return True
     return False
 
 
