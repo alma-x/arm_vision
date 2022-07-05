@@ -18,12 +18,12 @@ from geometry_msgs.msg import TransformStamped
 aruco_topic='/aruco_poses'
 base_frame='base_link'
 camera_frame='camera_link'
-joint_states_topic='/joint_states'
+# joint_states_topic='/joint_states'
 
 tf_buffer=None
 tf_listener=None
 tf_broadcaster=None
-joint_velocities=[]
+# joint_velocities=[]
 
 
 
@@ -44,7 +44,8 @@ markers_dict={'button_1':           1,
               }
 
 arucos_in_sight=[]
-found_arucos=[[xx,False] for xx in range(1,15)]
+DEFAULT_IN_SIGHT=False
+found_arucos=[[aruco_id,DEFAULT_IN_SIGHT] for aruco_id in range(1,15)]
 
 
 def nameOfMarkerReference(id):
@@ -56,6 +57,7 @@ def nameOfMarkerReference(id):
 
 def getMarkersInSight(aruco_msg):
     global arucos_in_sight
+    arucos_in_sight=[]
     for current_id,current_pose in zip(aruco_msg.ids,aruco_msg.poses):
         arucos_in_sight.append((current_id,current_pose))
     # arucos_in_sight[ii][1].position.x eg. is accessible
@@ -85,24 +87,30 @@ def transformCameraToReference(target_frame):
 #     return False
 
 
-def getVelocities(js_msg):
-    global joint_velocities
-    current_velocity=js_msg.velocity
-    joint_velocities=np.roll(joint_velocities,1)
-    joint_velocities[0]=current_velocity
+# def getVelocities(js_msg):
+#     global joint_velocities
+#     current_velocity=js_msg.velocity
+#     joint_velocities=np.roll(joint_velocities,1)
+#     joint_velocities[0]=current_velocity
 
 
-
+#TODO
 def velocityTooBig():
-    for current_component in range(len(joint_velocities.T)):
-        current_speed=abs(joint_velocities.T[current_component])
-        current_max=np.max(current_speed)
-        current_mean=\
-            np.mean(current_speed[np.nonzero(current_speed)]) if \
-            current_speed[np.nonzero(current_speed)] else 0
-        if current_max>1.5*current_mean or np.isnan(current_mean):
-            print('pianooo')
-            return True
+    # for current_component in range(len(joint_velocities.T)):
+    #     considered_speeds=abs(joint_velocities.T[current_component])
+    #     current_speed=np.round(considered_speeds[0],5)
+    #     previous_speed=np.round(considered_speeds[10],5)
+    #     if abs(current_speed)>20*abs(previous_speed) and previous_speed!=0:
+    #     # current_max=np.max(considered_speeds)
+    #     # current_mean=\
+    #     #     np.mean(considered_speeds[np.nonzero(considered_speeds)]) if \
+    #     #     not considered_speeds[np.nonzero(considered_speeds)].size!=0 else 0
+    #     # if current_max>5*current_mean or np.isnan(current_mean):
+    #         return True
+    return False
+
+
+def distanceTooBig():
     return False
 
 
@@ -111,7 +119,7 @@ def broadcastTFMarkers(_):
     global found_arucos
     tfs_to_broadcast=[]
 
-    if not velocityTooBig():
+    if not (velocityTooBig() and distanceTooBig()):
         for current_id,current_pose in arucos_in_sight:
             if not found_arucos[current_id-1][1]:
                 tf_stamped=TransformStamped()
@@ -161,9 +169,9 @@ def broadcastTFMarkers(_):
 #----------------------------------------------------------
 
 def arucoInquirer():
-    global joint_velocities
-    joint_velocities=np.zeros(\
-        (50,len(rospy.wait_for_message(joint_states_topic,JointState).velocity)))
+    # global joint_velocities
+    # joint_velocities=np.zeros(\
+    #     (50,len(rospy.wait_for_message(joint_states_topic,JointState).velocity)))
 
     global aruco_sub
     aruco_sub=rospy.Subscriber(aruco_topic,ArucoPoses,getMarkersInSight)
@@ -180,7 +188,7 @@ def arucoInquirer():
     tf_timer=rospy.Timer(TIMER_DURATION,broadcastTFMarkers)
     # refinement_timer=rospy.Timer(5*TIMER_DURATION,refineTFMarkers)
 
-    velocity_sub=rospy.Subscriber(joint_states_topic,JointState,getVelocities,queue_size=1)
+    # velocity_sub=rospy.Subscriber(joint_states_topic,JointState,getVelocities,queue_size=1)
 
 #############################################################
 

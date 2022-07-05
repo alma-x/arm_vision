@@ -8,8 +8,7 @@
 <!--NODO0: preprocessing image-->
  
 <!-- NODE1: find arucos, 
-                cosmethic superimpose to image (TODO)
-             -->
+            (TODO) cosmethic superimpose to image  -->
         <node 
                 name="detector_aruco" 
                 pkg="arm_vision" 
@@ -19,17 +18,16 @@
                 launch-prefix="xterm -e"
         ></node>
     
-<!-- NODE2: compute absolute position of markers
-            ? which is the best way to publish position data: TF, vectors ? -->
-
-        <!-- <node 
+<!-- NODE2: compute absolute position of markers using TF -->
+        <node 
                 name="referencer_aruco" 
                 pkg="arm_vision" 
                 type="referencer_aruco.py" 
                 respawn="true" 
                 output="screen"
                 launch-prefix="xterm -e"
-        ></node> -->
+        ></node>
+        
 <!--NODE3: collision server shall be included in another package ! -->
  
 </launch>

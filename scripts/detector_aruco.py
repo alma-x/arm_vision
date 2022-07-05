@@ -140,7 +140,7 @@ def cameraCallback(raw_img):
                     
                     rotMatr,tVect=Pmatr[0:3,0:3],Pmatr[0:3,3]
                     tVect=np.round(1E-3*tVect,5)
-
+                    distance_aruco=np.round(aruDistnc*1E-3,4)
                     #TODO: RECOVER DISTANCE CAMERA-GRIPPER
                     # ALSO REDEFINE DIMENSIONS IN APPROPRIATE REFERENCE FRAME'S AXIS
                     
@@ -158,6 +158,7 @@ def cameraCallback(raw_img):
 
                     aruco_msg.ids.append(int(mId))
                     aruco_msg.poses.append(aruco_pose)
+                    aruco_msg.distances.append(distance_aruco)
                 
                 if SMALLER_DISPLAY:
                     aruco_img_size=detAruImg.shape[:2]
