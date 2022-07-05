@@ -28,6 +28,18 @@
                 launch-prefix="xterm -e"
         ></node>
         
-<!--NODE3: collision server shall be included in another package ! -->
- 
+<!--NODE3:  answers to bridge requesting found markers-->
+        <node 
+                name="inquirer_aruco" 
+                pkg="arm_vision" 
+                type="inquirer_aruco.py" 
+                respawn="true" 
+                output="screen"
+                launch-prefix="xterm -e"
+        ></node>
+
+
+
+
+<!-- collision server shall be included in another package ! -->
 </launch>
