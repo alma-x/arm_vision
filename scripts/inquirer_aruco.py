@@ -10,6 +10,7 @@ from arm_vision.msg import FoundArucos
 from arm_control.srv import aruco_service,aruco_serviceResponse
 from arm_control.srv import cv_server,cv_serverResponse, cv_serverRequest
 from arm_control.msg import cv_to_bridge as bridge_msg
+from arm_control.srv import DummyMarker,DummyMarkerResponse,DummyMarkerRequest
 bool_exit=False
 
 targetList=[[1,50],
@@ -45,6 +46,7 @@ markers_dict={'button_1':           1,
 
 findings_topic="/found_arucos"
 base_frame='base_link'
+inquiries_service='aruco_inquiries'
 
 aruco_success=False
 
@@ -116,6 +118,24 @@ def rotationMatrixFromQuaternion(Q):
     R=[[R00,R01,R02],[R10,R11,R12],[R20,R21,R22]]
     return np.array(R)
 
+def arucoInquiriesServer(aruco_req):
+    print('checking if id {} has been found'.format(aruco_req.id))
+    if (aruco_req.id-1) in [*np.where(found_markers)][0]:
+        aruco_response=DummyMarkerResponse()
+        aruco_response.found=True
+        tf_=getArucoPose(aruco_req.id)
+        # aruco_response.pose.position=[tf_.translation.x,tf_.translation.y,tf_.translation.z]
+        aruco_response.pose.position=tf_.translation
+        aruco_response.pose.orientation=tf_.rotation
+        print(aruco_response.pose.position)
+        print(aruco_response.pose.orientation)
+    else:
+        aruco_response=DummyMarkerResponse()
+        aruco_response.found=False
+        aruco_response.pose=Pose()
+    return DummyMarkerResponse(aruco_response)
+
+    
 
 def inquireFoundMarkers(_):
     global aruco_success
@@ -197,10 +217,12 @@ def arucoInquirer():
     global bridge_pub
     bridge_pub = rospy.Publisher('aruco_bridge_opencv', bridge_msg, queue_size=1)
     
-    INQUIRE_DURATION=rospy.Duration(nsecs=1E6)
-    inquire_timer=rospy.Timer(INQUIRE_DURATION,inquireFoundMarkers)
+    # INQUIRE_DURATION=rospy.Duration(nsecs=1E6)
+    # inquire_timer=rospy.Timer(INQUIRE_DURATION,inquireFoundMarkers)
 
-    rospy.Service('cv_server', cv_server, callback_service)
+    # rospy.Service('cv_server', cv_server, callback_service)
+
+    rospy.Service(inquiries_service, DummyMarker, arucoInquiriesServer)
     
 ###########################################################
 
