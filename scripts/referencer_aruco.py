@@ -11,8 +11,8 @@ import tf2_ros
 # from tf import transformations
 from geometry_msgs.msg import TransformStamped
 
+aruco_topic='/camera_poses'
 
-aruco_topic='/aruco_poses'
 base_frame='base_link'
 camera_frame='camera_link'
 # joint_states_topic='/joint_states'
@@ -112,6 +112,9 @@ def velocityTooBig():
 def distanceTooBig():
     return False
 
+def canReference():
+    return True
+
 
 def assembleFindingsMessage():
     msg=FoundArucos()
@@ -124,7 +127,7 @@ def broadcastTFMarkers(_):
     global found_arucos
     tfs_to_broadcast=[]
 
-    if not (velocityTooBig() and distanceTooBig()):
+    if not (velocityTooBig() and distanceTooBig()) or canReference():
         for current_id,current_pose in arucos_in_sight:
             if not found_arucos[current_id-1][1]:
                 tf_stamped=TransformStamped()

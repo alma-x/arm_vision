@@ -14,8 +14,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from roscamLibrary3 import nsingleAruRelPos as singleAruRelPos
 
 #------------------------------------------------
-
-bool_exit=False
+camera_poses_topic='/camera_poses'
 
 ARUCO_PARAMETERS = aruco.DetectorParameters_create()
 
@@ -117,8 +116,7 @@ def eulerFromRotatioMatrix(R):
     return np.array([teta_x,teta_y,teta_z])   
 
 def cameraCallback(raw_img):
-    SMALLER_DISPLAY=True
-    global bool_exit
+    SMALLER_DISPLAY=False
     global aruco_pub
     aruco_msg=ArucoPoses()
 
@@ -189,13 +187,16 @@ def listener(myCam,myTop,myType,myCallk):
     print('node: {}'.format(node_name))
     print('camera: {}'.format(myCam))
     print('input topic: {}\n'.format(myTop))
+
     loadCameraParam(myCam)
+
     print('connecting to:'+myCamera+myTopicFull[0]+'... ',end="")
     rospy.wait_for_message(myCam+myTop,myType)
     print("ok")
+    
     rospy.Subscriber(myCam+myTop,myType,myCallk,queue_size = 1)
     global aruco_pub
-    aruco_pub=rospy.Publisher('/aruco_poses',ArucoPoses,queue_size=1)
+    aruco_pub=rospy.Publisher(camera_poses_topic,ArucoPoses,queue_size=1)
 
     try:
         rospy.spin()

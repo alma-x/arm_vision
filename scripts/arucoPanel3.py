@@ -69,20 +69,6 @@ def loadCameraParam(myCam):
 #               'panelSwitch2':{'id':2,'size':50}}
 
 #TODO: MAKE THIS INTO A DICTIONARY AS ABOVE
-# targetList=[[1,50],
-#             [2,50],
-#             [3,50],
-#             [4,50],
-#             [5,50],
-#             [6,50],
-#             [7,50],
-#             [8,50],
-#             [9,50],
-#             [10,40],
-#             [11,50],
-#             [12,50],
-#             [13,40],
-#             [14,50]]
 targetList=[[1,50],
             [2,50],
             [3,50],
@@ -96,11 +82,25 @@ targetList=[[1,50],
             [11,50],
             [12,50],
             [13,40],
-            [14,50],
-            [102,40],
-            [104,40],
-            [106,40],
-            [108,40]]
+            [14,50]]
+# targetList=[[1,50],
+#             [2,50],
+#             [3,50],
+#             [4,50],
+#             [5,50],
+#             [6,50],
+#             [7,50],
+#             [8,50],
+#             [9,50],
+#             [10,40],
+#             [11,50],
+#             [12,50],
+#             [13,40],
+#             [14,50],
+#             [102,40],
+#             [104,40],
+#             [106,40],
+#             [108,40]]
 aruco_success=False
 
 #TODO: FOLLOWING TARGET STRING DOES NOT WORK
@@ -108,7 +108,7 @@ aruco_success=False
 #            ,'panelSwitch3','panelSwitch2','panelSwitch1']
 
 #TODO? WHY IS A TARGET STRING NEEDED?
-targetList=[[102,40],[104,40],[106,40],[108,40]]
+# targetList=[[102,40],[104,40],[106,40],[108,40]]
 targetCounter=0
 targetListLen=len(targetList)
 remaining_targets=targetListLen
@@ -148,8 +148,8 @@ def callbackRaw(raw_img):
     # except CvBridgeError: ...
 
     msg=bridge_msg()
-    # msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False]
-    msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False]
+    msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False]
+    # msg.aruco_found=[False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False,False]
     
     #TODO: WHY targetCounter goes above len(targetList) even if forced otherwise?
     (targetMarkId,targetMarkSize)=tuple(targetList[targetCounter])
@@ -164,7 +164,8 @@ def callbackRaw(raw_img):
         for mId, aruPoints in zip(detIds, detCorners):
             if len(msg.aruco_found)>int(mId):
                 msg.aruco_found[int(mId)]=True
-            if mId==targetList[targetCounter][0]:    
+            if mId==targetList[targetCounter][0]:
+                # targetMarkSize=targetList[mId-1][1]
                 detAruImg,aruDistnc,Pmatr=singleAruRelPos(detAruImg,aruPoints,mId,targetMarkSize,
                                             cameraMatr,cameraDistCoefs,tglDrawMark=1)
                 
