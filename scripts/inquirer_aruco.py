@@ -24,7 +24,7 @@ markers_dict={'button_1':           1,
               'button_8':           8,
               'button_9':           9,
               'imu_':               10,
-              'imu_wall':           11,
+              'left_panel':           11,
               'inspection_panel':   12,
               'lid_':               13,
               'lid_storage':        14

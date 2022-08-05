@@ -36,11 +36,30 @@ markers_dict={'button_1':           1,
               'button_8':           8,
               'button_9':           9,
               'imu_':               10,
-              'imu_wall':           11,
+              'left_panel':         11,
               'inspection_panel':   12,
               'lid_':               13,
               'lid_storage':        14
               }
+              
+objects_markers={'base':            [10,14],
+                 'robot_frame':[id for id in range(1,10)],
+                 'mid_panel':[marker for marker in range (1,10)],
+                 'button_1': [marker for marker in range (1,10)],
+                'button_2':  [marker for marker in range (1,10)],
+                'button_3':  [marker for marker in range (1,10)],
+                'button_4': [marker for marker in range (1,10)],
+                'button_5': [marker for marker in range (1,10)],
+                'button_6':  [marker for marker in range (1,10)],
+                'button_7':  [marker for marker in range (1,10)],
+                'button_8':  [marker for marker in range (1,10)],
+                'button_9':  [marker for marker in range (1,10)],
+                'imu_':               [10],
+                'left_panel':          [11],
+                'right_panel':        [12,13],
+                'inspection_panel':   [12,13],
+                'lid_':               [13]}
+
 
 arucos_in_sight=[]
 DEFAULT_IN_SIGHT=False
@@ -199,6 +218,8 @@ def arucoReferencer():
     findings_pub=rospy.Publisher(findings_topic,FoundArucos,queue_size=1)
 
     TIMER_DURATION=rospy.Duration(nsecs=2E6)
+    #TODO: could change into broadcasting only objects and only using pose
+    #   for scoring the aruco findings
     tf_timer=rospy.Timer(TIMER_DURATION,broadcastTFMarkers)
     # refinement_timer=rospy.Timer(5*TIMER_DURATION,refineTFMarkers)
 

@@ -20,9 +20,9 @@
     
 <!-- NODE2: compute absolute position of markers using TF -->
         <node 
-                name="referencer_aruco" 
+                name="referencer" 
                 pkg="arm_vision" 
-                type="referencer_aruco.py" 
+                type="referencer.py" 
                 respawn="true" 
                 output="screen"
                 launch-prefix="xterm -e"
