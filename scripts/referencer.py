@@ -3,7 +3,7 @@
 import rospy
 import numpy as np
 # from sensor_msgs.msg import JointState
-# from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose
 # from tf.transformations import quaternion_from_euler
 from arm_vision.msg import ArucoPoses,FoundArucos
 import tf2_ros
@@ -24,50 +24,77 @@ tf_broadcaster=None
 findings_pub=None
 # joint_velocities=[]
 
+# markers_dict={'button_1':           1,
+#               'button_2':           2,
+#               'button_3':           3,
+#               'button_4':           4,
+#               'button_5':           5,
+#               'button_6':           6,
+#               'button_7':           7,
+#               'button_8':           8,
+#               'button_9':           9,
+#               'imu_':               10,
+#               'left_panel':         11,
+#               'inspection_panel':   12,
+#               'lid_':               13,
+#               'lid_storage':        14
+#               }
 
-
-markers_dict={'button_1':           1,
-              'button_2':           2,
-              'button_3':           3,
-              'button_4':           4,
-              'button_5':           5,
-              'button_6':           6,
-              'button_7':           7,
-              'button_8':           8,
-              'button_9':           9,
-              'imu_':               10,
-              'left_panel':         11,
-              'inspection_panel':   12,
-              'lid_':               13,
-              'lid_storage':        14
+markers_dict={'id_1':           1,
+              'id_2':           2,
+              'id_3':           3,
+              'id_4':           4,
+              'id_5':           5,
+              'id_6':           6,
+              'id_7':           7,
+              'id_8':           8,
+              'id_9':           9,
+              'id_10':          10,
+              'id_11':          11,
+              'id_12':          12,
+              'id_13':          13,
+              'id_14':          14
               }
-              
+
+MAX_MID_PANEL_ARUCO_ID=4
+# MAX_MID_PANEL_ARUCO_ID=9
 objects_markers={'base':            [10,14],
-                 'robot_frame':[id for id in range(1,10)],
-                 'mid_panel':[marker for marker in range (1,10)],
-                 'button_1': [marker for marker in range (1,10)],
-                'button_2':  [marker for marker in range (1,10)],
-                'button_3':  [marker for marker in range (1,10)],
-                'button_4': [marker for marker in range (1,10)],
-                'button_5': [marker for marker in range (1,10)],
-                'button_6':  [marker for marker in range (1,10)],
-                'button_7':  [marker for marker in range (1,10)],
-                'button_8':  [marker for marker in range (1,10)],
-                'button_9':  [marker for marker in range (1,10)],
+                 'robot_frame':[id for id in range(1,MAX_MID_PANEL_ARUCO_ID+1)],
+                 'mid_panel':[marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                 'button_1': [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                'button_2':  [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                'button_3':  [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                'button_4': [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                'button_5': [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                'button_6':  [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                'button_7':  [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                'button_8':  [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
+                'button_9':  [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
                 'imu_':               [10],
                 'left_panel':          [11],
                 'right_panel':        [12,13],
                 'inspection_panel':   [12,13],
                 'lid_':               [13]}
 
-
+MAX_ARUCO_ID=14
 arucos_in_sight=[]
 DEFAULT_IN_SIGHT=False
-found_arucos=[[aruco_id,DEFAULT_IN_SIGHT] for aruco_id in range(1,15)]
+found_arucos=[[aruco_id,DEFAULT_IN_SIGHT,Pose()] for aruco_id in range(1,MAX_ARUCO_ID+1)]
 
+
+BASE_BROADCASTED=False
+ROBOT_FRAME_BROADCASTED=False
+MID_PANEL_BROADCASTED=False
+BUTTONS_BROADCASTED=[False]*MAX_MID_PANEL_ARUCO_ID
+LEFT_PANEL_BROADCASTED=False
+IMU_BROADCASTED=False
+RIGHT_PANEL_BROADCASTED=False
+LID_BROADCASTED=False
+INSPECTION_BOX_BROADCASTED=False
+objects_to_broadcast=[]
 
 def nameOfMarkerReference(id):
-    global markers_dict
+    #TODO: why not working??: return "id_"+str(id)
     for marker_name, marker_id in markers_dict.items():
         if marker_id == id:
             return marker_name
@@ -137,7 +164,7 @@ def canReference():
 
 def assembleFindingsMessage():
     msg=FoundArucos()
-    for _,current_finding in found_arucos:
+    for _,current_finding,_ in found_arucos:
         msg.findings.append(current_finding)
     return msg
 
@@ -176,26 +203,102 @@ def broadcastTFMarkers(_):
                         found_arucos[current_id-1][1]=True
                         print('broadcasting tf for: {} (markerd id: {})'.
                             format(current_frame,current_id))
+                        found_arucos[current_id-1][2].orientation=new_tf.transform.rotation
+                        found_arucos[current_id-1][2].position=new_tf.transform.translation
             except (tf2_ros.LookupException, \
                 tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 pass
     findings_msg=assembleFindingsMessage()
     findings_pub.publish(findings_msg)
+    #TODO still does not work well, as for now i will simply broadcast tf when the robot is moving slow
+    # def refineTFMarkers(_):
+    #     for current_id,current_pose in arucos_in_sight:
+    #         current_frame=nameOfMarkerReference(current_id)
+    #         try:
+    #             broadcasted_pose=tf_buffer.lookup_transform(base_frame,current_frame,rospy.Time()).transform
+    #             if poseErrorTooBig(current_pose,broadcasted_pose):
+    #                 found_arucos[current_id-1][1]=False
+    #                 print('transform for {} (id: {}) scheduled for refinement'.
+    #                     format(current_frame,current_id))
+
+    #         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, \
+    #             tf2_ros.ExtrapolationException): pass
+
+
+def updateObjects(_):
+    print(found_arucos)
+    global objects_to_broadcast
+    objects_to_broadcast=[]
+    broadcast_request=False
+    # if not BASE_BROADCASTED:
+    #     if all([found_arucos[required][1] for required in objects_markers['base']]):
+    #         computeBasePose()
+    #         BASE_BROADCASTED=True
+    if not MID_PANEL_BROADCASTED:
+        if all([found_arucos[required-1][1] for required in objects_markers['mid_panel']]):
+            print('referencing '+'mid_panel')
+            computeMidPanelPose()
+            broadcast_request=True
+
+    if broadcast_request:
+        try:
+            tf_broadcaster.sendTransform(objects_to_broadcast)
+        except (tf2_ros.LookupException, \
+                    tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            pass
+
     
+            
 
-#TODO still does not work well, as for now i will simply broadcast tf when the robot is moving slow
-# def refineTFMarkers(_):
-#     for current_id,current_pose in arucos_in_sight:
-#         current_frame=nameOfMarkerReference(current_id)
-#         try:
-#             broadcasted_pose=tf_buffer.lookup_transform(base_frame,current_frame,rospy.Time()).transform
-#             if poseErrorTooBig(current_pose,broadcasted_pose):
-#                 found_arucos[current_id-1][1]=False
-#                 print('transform for {} (id: {}) scheduled for refinement'.
-#                     format(current_frame,current_id))
 
-#         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, \
-#             tf2_ros.ExtrapolationException): pass
+# def computeBasePose():
+#     """
+#       z=average(14, 10+offset)
+#       y=base_frame+offset
+#       x=base_frame+offset
+#       normal=z
+#       size= fixed
+#     """
+
+def computeMidPanelPose():
+    """
+      z=average(1-9)
+      y=average(1-9)
+      x=average(1-9)
+      normal=x
+      size= fixed
+    """
+    global objects_to_broadcast
+    global MID_PANEL_BROADCASTED
+    object_pose=Pose()
+    object_pose.position.x=np.average([found_arucos[required][2].position.x for required in objects_markers['mid_panel']])
+    object_pose.position.y=np.average([found_arucos[required][2].position.y for required in objects_markers['mid_panel']])
+    object_pose.position.z=np.average([found_arucos[required][2].position.z for required in objects_markers['mid_panel']])
+    object_pose.orientation=found_arucos[0][2].orientation
+    # object_pose.orientation=[found_arucos[0][2].orientation for required in objects_markers['mid_panel']][0]
+
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    current_frame="mid_panel"
+    tf_stamped.child_frame_id=current_frame
+
+    tf_stamped.header.frame_id=base_frame
+    tf_stamped.transform.translation.x=object_pose.position.x
+    tf_stamped.transform.translation.y=object_pose.position.y
+    tf_stamped.transform.translation.z=object_pose.position.z
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    MID_PANEL_BROADCASTED=True
+    # try:
+    #     tf_broadcaster.sendTransform(tf_stamped)
+    #     MID_PANEL_BROADCASTED=True
+    # except (tf2_ros.LookupException, \
+    #             tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+    #     pass
+
 #----------------------------------------------------------
 
 def arucoReferencer():
@@ -224,6 +327,9 @@ def arucoReferencer():
     # refinement_timer=rospy.Timer(5*TIMER_DURATION,refineTFMarkers)
 
     # velocity_sub=rospy.Subscriber(joint_states_topic,JointState,getVelocities,queue_size=1)
+
+    TIMER_DURATION=rospy.Duration(secs=10)
+    update_timer=rospy.Timer(TIMER_DURATION,updateObjects)
 
 #############################################################
 
