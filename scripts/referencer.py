@@ -58,8 +58,8 @@ markers_dict={'id_1':           1,
 
 MAX_MID_PANEL_ARUCO_ID=4
 # MAX_MID_PANEL_ARUCO_ID=9
-objects_markers={'base':            [10,14],
-                 'robot_frame':[id for id in range(1,MAX_MID_PANEL_ARUCO_ID+1)],
+objects_markers={'table_':            [10,14],
+                #  'robot_frame':[id for id in range(1,MAX_MID_PANEL_ARUCO_ID+1)],
                  'mid_panel':[marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
                  'button_1': [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
                 'button_2':  [marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
@@ -81,8 +81,7 @@ arucos_in_sight=[]
 DEFAULT_IN_SIGHT=False
 found_arucos=[[aruco_id,DEFAULT_IN_SIGHT,Pose()] for aruco_id in range(1,MAX_ARUCO_ID+1)]
 
-
-BASE_BROADCASTED=False
+TABLE_BROADCASTED=False
 ROBOT_FRAME_BROADCASTED=False
 MID_PANEL_BROADCASTED=False
 BUTTONS_BROADCASTED=[False]*MAX_MID_PANEL_ARUCO_ID
@@ -90,8 +89,10 @@ LEFT_PANEL_BROADCASTED=False
 IMU_BROADCASTED=False
 RIGHT_PANEL_BROADCASTED=False
 LID_BROADCASTED=False
-INSPECTION_BOX_BROADCASTED=False
+INSPECTION_PANEL_BROADCASTED=False
+objects_correctly_broadcasted=True
 objects_to_broadcast=[]
+
 
 def nameOfMarkerReference(id):
     #TODO: why not working??: return "id_"+str(id)
@@ -158,6 +159,7 @@ def velocityTooBig():
 def distanceTooBig():
     return False
 
+
 def canReference():
     return True
 
@@ -167,6 +169,7 @@ def assembleFindingsMessage():
     for _,current_finding,_ in found_arucos:
         msg.findings.append(current_finding)
     return msg
+
 
 def broadcastTFMarkers(_):
     global tf_broadcaster
@@ -200,11 +203,11 @@ def broadcastTFMarkers(_):
                     tf_broadcaster.sendTransform(new_tf)
                     current_id=markers_dict.get(current_frame)
                     if not found_arucos[current_id-1][1]:
-                        found_arucos[current_id-1][1]=True
                         print('broadcasting tf for: {} (markerd id: {})'.
                             format(current_frame,current_id))
                         found_arucos[current_id-1][2].orientation=new_tf.transform.rotation
                         found_arucos[current_id-1][2].position=new_tf.transform.translation
+                        found_arucos[current_id-1][1]=True
             except (tf2_ros.LookupException, \
                 tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 pass
@@ -226,54 +229,107 @@ def broadcastTFMarkers(_):
 
 
 def updateObjects(_):
-    print(found_arucos)
+    # print(found_arucos)
     global objects_to_broadcast
-    objects_to_broadcast=[]
-    broadcast_request=False
-    # if not BASE_BROADCASTED:
-    #     if all([found_arucos[required][1] for required in objects_markers['base']]):
-    #         computeBasePose()
-    #         BASE_BROADCASTED=True
-    if not MID_PANEL_BROADCASTED:
-        if all([found_arucos[required-1][1] for required in objects_markers['mid_panel']]):
-            print('referencing '+'mid_panel')
-            computeMidPanelPose()
-            broadcast_request=True
+    global objects_correctly_broadcasted
+    if objects_correctly_broadcasted:
+        objects_to_broadcast=[]
 
-    if broadcast_request:
+    if not MID_PANEL_BROADCASTED and \
+    all([found_arucos[required-1][1] for required in objects_markers['mid_panel']]):
+        print('referencing '+'mid_panel')
+        computeMidPanelPose()
+
+    if not TABLE_BROADCASTED and \
+        all([found_arucos[required-1][1] for required in objects_markers['table_']]):
+        print('referencing '+'table_')
+        computeTablePose()
+
+    if not ROBOT_FRAME_BROADCASTED:
+        print('referencing '+'robot_frame')
+        computeRobotFramePose()
+
+    if not LEFT_PANEL_BROADCASTED and \
+    all([found_arucos[required-1][1] for required in objects_markers['left_panel']]):
+        print('referencing '+'left_panel')
+        computeLeftPanelPose()
+
+    if not RIGHT_PANEL_BROADCASTED and \
+    all([found_arucos[required-1][1] for required in objects_markers['right_panel']]):
+        print('referencing '+'right_panel')
+        computeRightPanelPose()
+
+    [[print('referencing '+'button_'+str(id)), computeButtonPose(id)]\
+        for id in range(1,MAX_MID_PANEL_ARUCO_ID+1) \
+        if not BUTTONS_BROADCASTED[id-1] and found_arucos[id-1][1]]
+    
+    if not IMU_BROADCASTED and \
+    all([found_arucos[required-1][1] for required in objects_markers['imu_']]):
+        print('referencing '+'imu_')
+        computeImuPose()
+    
+    if not INSPECTION_PANEL_BROADCASTED and \
+    all([found_arucos[required-1][1] for required in objects_markers['inspection_panel']]):
+        print('referencing '+'inspection_panel')
+        computeInspectionPanelPose()
+    
+    if not LID_BROADCASTED and \
+    all([found_arucos[required-1][1] for required in objects_markers['lid_']]):
+        print('referencing '+'lid_')
+        computeLidPose()
+
+    if objects_to_broadcast:
         try:
             tf_broadcaster.sendTransform(objects_to_broadcast)
+            objects_correctly_broadcasted=True
         except (tf2_ros.LookupException, \
                     tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            pass
+            objects_correctly_broadcasted=False
+            #TODO: add check if object already in the list
+            #   currently leave to tf the job
 
-    
-            
 
+def computeTablePose():
+    """
+      normal:z
+      size= x,y=1
+    """
+    global objects_to_broadcast
+    global TABLE_BROADCASTED
+    # object_pose.orientation=[found_arucos[0][2].orientation for required in objects_markers['mid_panel']][0]
 
-# def computeBasePose():
-#     """
-#       z=average(14, 10+offset)
-#       y=base_frame+offset
-#       x=base_frame+offset
-#       normal=z
-#       size= fixed
-#     """
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    current_frame="table_"
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id=base_frame
+    tf_stamped.transform.translation.x=.7/4
+    tf_stamped.transform.translation.y=0
+    tf_stamped.transform.translation.z=\
+     np.average([found_arucos[required-1][2].position.z for required in objects_markers['table_']])-.025
+    object_pose=Pose()
+    object_pose.orientation=found_arucos[0][2].orientation
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    TABLE_BROADCASTED=True
+
 
 def computeMidPanelPose():
     """
-      z=average(1-9)
-      y=average(1-9)
-      x=average(1-9)
+      z,y,z=average(1-9)
       normal=x
-      size= fixed
+      size= z:.5
+            y=.3
     """
     global objects_to_broadcast
     global MID_PANEL_BROADCASTED
     object_pose=Pose()
-    object_pose.position.x=np.average([found_arucos[required][2].position.x for required in objects_markers['mid_panel']])
-    object_pose.position.y=np.average([found_arucos[required][2].position.y for required in objects_markers['mid_panel']])
-    object_pose.position.z=np.average([found_arucos[required][2].position.z for required in objects_markers['mid_panel']])
+    object_pose.position.x=np.average([found_arucos[required-1][2].position.x for required in objects_markers['mid_panel']])
+    object_pose.position.y=np.average([found_arucos[required-1][2].position.y for required in objects_markers['mid_panel']])
+    object_pose.position.z=np.average([found_arucos[required-1][2].position.z for required in objects_markers['mid_panel']])
     object_pose.orientation=found_arucos[0][2].orientation
     # object_pose.orientation=[found_arucos[0][2].orientation for required in objects_markers['mid_panel']][0]
 
@@ -281,7 +337,6 @@ def computeMidPanelPose():
     tf_stamped.header.stamp=rospy.Time.now()
     current_frame="mid_panel"
     tf_stamped.child_frame_id=current_frame
-
     tf_stamped.header.frame_id=base_frame
     tf_stamped.transform.translation.x=object_pose.position.x
     tf_stamped.transform.translation.y=object_pose.position.y
@@ -292,15 +347,207 @@ def computeMidPanelPose():
     tf_stamped.transform.rotation.w=object_pose.orientation.w
     objects_to_broadcast.append(tf_stamped)
     MID_PANEL_BROADCASTED=True
-    # try:
-    #     tf_broadcaster.sendTransform(tf_stamped)
-    #     MID_PANEL_BROADCASTED=True
-    # except (tf2_ros.LookupException, \
-    #             tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-    #     pass
+
+
+def computeRobotFramePose():
+    """
+      z=base_frame-.1
+      y=base_frame
+      x=average(mid_panel,base_frame)
+      orientation=base_frame
+      size= x:.7
+            y,z=.1
+    """
+    global objects_to_broadcast
+    global ROBOT_FRAME_BROADCASTED
+    object_pose=Pose()
+    object_pose.position.x=np.average([found_arucos[required-1][2].position.x for required in objects_markers['mid_panel']])
+    object_pose.position.y=np.average([found_arucos[required-1][2].position.y for required in objects_markers['mid_panel']])
+    object_pose.position.z=np.average([found_arucos[required-1][2].position.z for required in objects_markers['mid_panel']])
+    object_pose.orientation=found_arucos[0][2].orientation
+    # object_pose.orientation=[found_arucos[0][2].orientation for required in objects_markers['mid_panel']][0]
+
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    current_frame="robot_frame"
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id=base_frame
+    tf_stamped.header.frame_id=base_frame
+    tf_stamped.transform.translation.x=.7/2.5
+    tf_stamped.transform.translation.y=0
+    tf_stamped.transform.translation.z=-.08
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    ROBOT_FRAME_BROADCASTED=True
+
+
+def computeButtonPose(id):
+    global objects_to_broadcast
+    global BUTTONS_BROADCASTED
+
+    # object_pose.position.x=found_arucos[id-1][2].position.x
+    # object_pose.position.y=found_arucos[id-1][2].position.y-.055
+    # object_pose.position.z=found_arucos[id-1][2].position.z+.01
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    current_frame="button_"+str(id)
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id="id_"+str(id)
+    tf_stamped.transform.translation.x=0
+    tf_stamped.transform.translation.y=-.055
+    tf_stamped.transform.translation.z=.01
+    object_pose=Pose()
+    object_pose.orientation=found_arucos[0][2].orientation
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    BUTTONS_BROADCASTED[id-1]=True
+
+
+def computeLeftPanelPose():
+    global objects_to_broadcast
+    global LEFT_PANEL_BROADCASTED
+
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    reference_id=11
+    current_frame='left_panel'
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id="id_"+str(reference_id)
+    tf_stamped.transform.translation.x=0.0625
+    tf_stamped.transform.translation.y=-.15
+    tf_stamped.transform.translation.z=0
+    object_pose=Pose()
+    object_pose.orientation=found_arucos[reference_id-1][2].orientation
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    LEFT_PANEL_BROADCASTED=True
+
+
+def computeImuPose():
+    global objects_to_broadcast
+    global IMU_BROADCASTED
+    
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    reference_id=10
+    current_frame="imu_"
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id="id_"+str(reference_id)
+    tf_stamped.transform.translation.x=0
+    tf_stamped.transform.translation.y=0
+    tf_stamped.transform.translation.z=-.025
+    object_pose=Pose()
+    object_pose.orientation=found_arucos[reference_id-1][2].orientation
+    #TODO: apply rotation 
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    IMU_BROADCASTED=True
+
+
+def computeRightPanelPose():
+    global objects_to_broadcast
+    global RIGHT_PANEL_BROADCASTED
+    
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    reference_id=12
+    current_frame="right_panel"
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id="id_"+str(reference_id)
+    tf_stamped.transform.translation.x=0
+    tf_stamped.transform.translation.y=-(.04+.02)
+    tf_stamped.transform.translation.z=-.1
+    object_pose=Pose()
+    object_pose.orientation=found_arucos[reference_id-1][2].orientation
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    computeLidHandlePose()
+    RIGHT_PANEL_BROADCASTED=True
+
+
+def computeLidPose():
+    global objects_to_broadcast
+    global LID_BROADCASTED
+    
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    reference_id=13
+    current_frame="lid_"
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id="id_"+str(reference_id)
+    tf_stamped.transform.translation.x=.05
+    tf_stamped.transform.translation.y=.025
+    tf_stamped.transform.translation.z=-.002
+    object_pose=Pose()
+    object_pose.orientation=found_arucos[reference_id-1][2].orientation
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    computeLidHandlePose()
+    LID_BROADCASTED=True
+
+
+def computeLidHandlePose():
+    global objects_to_broadcast
+    
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    reference_id=13
+    current_frame="lid_handle"
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id="id_"+str(reference_id)
+    tf_stamped.transform.translation.x=.05
+    tf_stamped.transform.translation.y=.025
+    tf_stamped.transform.translation.z=.0175
+    object_pose=Pose()
+    object_pose.orientation=found_arucos[reference_id-1][2].orientation
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+
+
+def computeInspectionPanelPose():
+    global objects_to_broadcast
+    global INSPECTION_PANEL_BROADCASTED
+    reference_id=12
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    current_frame="inspection_panel"
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id="id_"+str(reference_id)
+    tf_stamped.transform.translation.x=0
+    tf_stamped.transform.translation.y=0
+    tf_stamped.transform.translation.z=-.05
+    object_pose=Pose()
+    object_pose.orientation=found_arucos[reference_id-1][2].orientation
+    tf_stamped.transform.rotation.x=object_pose.orientation.x
+    tf_stamped.transform.rotation.y=object_pose.orientation.y
+    tf_stamped.transform.rotation.z=object_pose.orientation.z
+    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    objects_to_broadcast.append(tf_stamped)
+    INSPECTION_PANEL_BROADCASTED=True
+
 
 #----------------------------------------------------------
-
 def arucoReferencer():
     # global joint_velocities
     # joint_velocities=np.zeros(\
@@ -320,16 +567,19 @@ def arucoReferencer():
     global findings_pub
     findings_pub=rospy.Publisher(findings_topic,FoundArucos,queue_size=1)
 
-    TIMER_DURATION=rospy.Duration(nsecs=2E6)
-    #TODO: could change into broadcasting only objects and only using pose
-    #   for scoring the aruco findings
-    tf_timer=rospy.Timer(TIMER_DURATION,broadcastTFMarkers)
+    ARUCO_TIMER_DURATION=rospy.Duration(nsecs=2E6)
+    #TODO: instead of a timer, should use a service
+    #   requested when the robot is not moving, by controller
+    tf_timer=rospy.Timer(ARUCO_TIMER_DURATION,broadcastTFMarkers)
+
     # refinement_timer=rospy.Timer(5*TIMER_DURATION,refineTFMarkers)
 
     # velocity_sub=rospy.Subscriber(joint_states_topic,JointState,getVelocities,queue_size=1)
 
-    TIMER_DURATION=rospy.Duration(secs=10)
-    update_timer=rospy.Timer(TIMER_DURATION,updateObjects)
+    OBJECTS_TIMER_DURATION=rospy.Duration(secs=2)
+    #TODO: could change into broadcasting only objects and only using pose
+    #   for scoring the aruco findings
+    update_timer=rospy.Timer(OBJECTS_TIMER_DURATION,updateObjects)
 
 #############################################################
 

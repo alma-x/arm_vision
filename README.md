@@ -2,9 +2,23 @@
 visual recognition of arm's work environment
 
 
-TODO
+TODO--------------------------------
 
-ERRORS:
+REFERENCER
+- change reference timer into a request server, requested when robot 
+    not moving
+
+- computeXPose() should call a function, passing the correct arguments,
+    when possible, hence to avoid repetition of same code too many times
+
+- rotate correctly reference frames:
+  IMU: y UP, x TOWARD LEFT
+
+- change to correct MAX_MID_PANEL_ARUCO_ID to 9
+ERRORS------------------------
+
+
+DETECTOR
 - sometimes (during exploration)
 
 [ERROR] [1659625745.921060, 4721.782000]: bad callback: <function cameraCallback at 0x7f041559a9d0>
