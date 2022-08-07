@@ -290,10 +290,6 @@ def updateObjects(_):
 
 
 def computeTablePose():
-    """
-      normal:z
-      size= x,y=1
-    """
     global objects_to_broadcast
     global TABLE_BROADCASTED
     # object_pose.orientation=[found_arucos[0][2].orientation for required in objects_markers['mid_panel']][0]
@@ -307,40 +303,28 @@ def computeTablePose():
     tf_stamped.transform.translation.y=0
     tf_stamped.transform.translation.z=\
      np.average([found_arucos[required-1][2].position.z for required in objects_markers['table_']])-.025
-    object_pose=Pose()
-    object_pose.orientation=found_arucos[0][2].orientation
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
     TABLE_BROADCASTED=True
 
 
 def computeMidPanelPose():
-    """
-      z,y,z=average(1-9)
-      normal=x
-      size= z:.5
-            y=.3
-    """
     global objects_to_broadcast
     global MID_PANEL_BROADCASTED
-    object_pose=Pose()
-    object_pose.position.x=np.average([found_arucos[required-1][2].position.x for required in objects_markers['mid_panel']])
-    object_pose.position.y=np.average([found_arucos[required-1][2].position.y for required in objects_markers['mid_panel']])
-    object_pose.position.z=np.average([found_arucos[required-1][2].position.z for required in objects_markers['mid_panel']])
-    object_pose.orientation=found_arucos[0][2].orientation
-    # object_pose.orientation=[found_arucos[0][2].orientation for required in objects_markers['mid_panel']][0]
+    object_pose=found_arucos[0][2]
 
     tf_stamped=TransformStamped()
     tf_stamped.header.stamp=rospy.Time.now()
     current_frame="mid_panel"
     tf_stamped.child_frame_id=current_frame
     tf_stamped.header.frame_id=base_frame
-    tf_stamped.transform.translation.x=object_pose.position.x
-    tf_stamped.transform.translation.y=object_pose.position.y
-    tf_stamped.transform.translation.z=object_pose.position.z
+    tf_stamped.transform.translation.x=\
+        np.average([found_arucos[required-1][2].position.x for required in objects_markers['mid_panel']])
+    tf_stamped.transform.translation.y=\
+        np.average([found_arucos[required-1][2].position.y for required in objects_markers['mid_panel']])
+    tf_stamped.transform.translation.z=\
+        np.average([found_arucos[required-1][2].position.z for required in objects_markers['mid_panel']])
+    #TODO:quaternions average
     tf_stamped.transform.rotation.x=object_pose.orientation.x
     tf_stamped.transform.rotation.y=object_pose.orientation.y
     tf_stamped.transform.rotation.z=object_pose.orientation.z
@@ -360,26 +344,16 @@ def computeRobotFramePose():
     """
     global objects_to_broadcast
     global ROBOT_FRAME_BROADCASTED
-    object_pose=Pose()
-    object_pose.position.x=np.average([found_arucos[required-1][2].position.x for required in objects_markers['mid_panel']])
-    object_pose.position.y=np.average([found_arucos[required-1][2].position.y for required in objects_markers['mid_panel']])
-    object_pose.position.z=np.average([found_arucos[required-1][2].position.z for required in objects_markers['mid_panel']])
-    object_pose.orientation=found_arucos[0][2].orientation
-    # object_pose.orientation=[found_arucos[0][2].orientation for required in objects_markers['mid_panel']][0]
 
     tf_stamped=TransformStamped()
     tf_stamped.header.stamp=rospy.Time.now()
     current_frame="robot_frame"
     tf_stamped.child_frame_id=current_frame
     tf_stamped.header.frame_id=base_frame
-    tf_stamped.header.frame_id=base_frame
     tf_stamped.transform.translation.x=.7/2.5
     tf_stamped.transform.translation.y=0
     tf_stamped.transform.translation.z=-.08
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
     ROBOT_FRAME_BROADCASTED=True
 
@@ -399,12 +373,7 @@ def computeButtonPose(id):
     tf_stamped.transform.translation.x=0
     tf_stamped.transform.translation.y=-.055
     tf_stamped.transform.translation.z=.01
-    object_pose=Pose()
-    object_pose.orientation=found_arucos[0][2].orientation
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
     BUTTONS_BROADCASTED[id-1]=True
 
@@ -422,12 +391,7 @@ def computeLeftPanelPose():
     tf_stamped.transform.translation.x=0.0625
     tf_stamped.transform.translation.y=-.15
     tf_stamped.transform.translation.z=0
-    object_pose=Pose()
-    object_pose.orientation=found_arucos[reference_id-1][2].orientation
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
     LEFT_PANEL_BROADCASTED=True
 
@@ -469,12 +433,7 @@ def computeRightPanelPose():
     tf_stamped.transform.translation.x=0
     tf_stamped.transform.translation.y=-(.04+.02)
     tf_stamped.transform.translation.z=-.1
-    object_pose=Pose()
-    object_pose.orientation=found_arucos[reference_id-1][2].orientation
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
     computeLidHandlePose()
     RIGHT_PANEL_BROADCASTED=True
@@ -493,12 +452,7 @@ def computeLidPose():
     tf_stamped.transform.translation.x=.05
     tf_stamped.transform.translation.y=.025
     tf_stamped.transform.translation.z=-.002
-    object_pose=Pose()
-    object_pose.orientation=found_arucos[reference_id-1][2].orientation
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
     computeLidHandlePose()
     LID_BROADCASTED=True
@@ -516,12 +470,7 @@ def computeLidHandlePose():
     tf_stamped.transform.translation.x=.05
     tf_stamped.transform.translation.y=.025
     tf_stamped.transform.translation.z=.0175
-    object_pose=Pose()
-    object_pose.orientation=found_arucos[reference_id-1][2].orientation
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
 
 
@@ -537,12 +486,7 @@ def computeInspectionPanelPose():
     tf_stamped.transform.translation.x=0
     tf_stamped.transform.translation.y=0
     tf_stamped.transform.translation.z=-.05
-    object_pose=Pose()
-    object_pose.orientation=found_arucos[reference_id-1][2].orientation
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
     INSPECTION_PANEL_BROADCASTED=True
 
