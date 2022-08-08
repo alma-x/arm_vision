@@ -98,6 +98,8 @@ objects_correctly_broadcasted=True
 objects_to_broadcast=[]
 
 can_reference=False
+override_reference_timeout=False
+REFERENCE_TIMEOUT=5
 
 
 def nameOfMarkerReference(id):
@@ -166,12 +168,6 @@ def distanceTooBig():
     return False
 
 
-def canReference():
-    global can_reference
-    can_reference=True
-    return can_reference
-
-
 def assembleFindingsMessage():
     msg=FoundArucos()
     for _,current_finding,_ in found_arucos:
@@ -179,15 +175,25 @@ def assembleFindingsMessage():
     return msg
 
 
-def referenceServer(_):
-    TIMEOUT=5
+def referencesServer(permission_signal):
     global can_reference
-    can_reference=True
-    print("permitting referencing for {} seconds".format(TIMEOUT))
+    if override_reference_timeout:
+        permisison_timeout=REFERENCE_TIMEOUT
+    else:permisison_timeout=permission_signal.timeout
+    #TODO: timed-out refereing deactivated since it starts
+    #       with the robot still moveing
+    # can_reference=True
+    # print("permitting referencing for {} seconds".format(permisison_timeout))
+    # start_time=rospy.get_time()
+    # while rospy.get_time()-start_time<permisison_timeout:continue
+    print("waiting {} seconds before referencing".format(permisison_timeout))
     start_time=rospy.get_time()
-    while rospy.get_time()-start_time<TIMEOUT:continue
+    while rospy.get_time()-start_time<permisison_timeout:continue
+    can_reference=True
+    rospy.sleep(rospy.Duration(nsecs=1E7))
     can_reference=False
-    return ReferenceAcquisitionResponse(done=True)
+    # return ReferenceAcquisitionResponse(done=True)
+    return True
 
 
 def broadcastTFMarkers(_):
@@ -538,7 +544,7 @@ def arucoReferencer():
     global findings_pub
     findings_pub=rospy.Publisher(findings_topic,FoundArucos,queue_size=1)
 
-    rospy.Service(REFERENCES_SERVICE, ReferenceAcquisition, referenceServer)
+    rospy.Service(REFERENCES_SERVICE, ReferenceAcquisition, referencesServer)
     
     ARUCO_TIMER_DURATION=rospy.Duration(nsecs=2E6)
     #TODO: instead of a timer, should use a service

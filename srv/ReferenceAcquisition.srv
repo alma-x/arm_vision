@@ -1,3 +1,5 @@
-std_msgs/Empty reference_request
+# signals permission to start referencing operation
+# setting a timeout
+int16 timeout
 ---
 bool done
