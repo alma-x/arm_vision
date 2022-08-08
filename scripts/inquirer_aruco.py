@@ -9,10 +9,8 @@ from geometry_msgs.msg import Pose
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
 from arm_vision.msg import FoundArucos
-from arm_control.srv import aruco_service,aruco_serviceResponse
-from arm_control.srv import cv_server,cv_serverResponse, cv_serverRequest
-from arm_control.msg import cv_to_bridge as bridge_msg
-from arm_control.srv import DummyMarker,DummyMarkerResponse,DummyMarkerRequest
+from arm_control.srv import aruco_service,aruco_serviceResponse,cv_server,cv_serverResponse, cv_serverRequest
+from arm_vision.srv import FoundMarker,FoundMarkerResponse,FoundMarkerRequest
 
 markers_dict={'button_1':           1,
               'button_2':           2,
@@ -32,7 +30,7 @@ markers_dict={'button_1':           1,
 
 findings_topic="/found_arucos"
 base_frame='base_link'
-inquiries_service='aruco_inquiries'
+INQUIRIES_SERVICE='aruco_inquiries'
 found_markers=[]
 available_ids=[]
 available_corners=[]
@@ -65,16 +63,20 @@ def getFoundMarkers(findings_msg):
 def arucoInquiriesServer(aruco_req):
     print('checking if id {} has been found'.format(aruco_req.id))
     if (aruco_req.id-1) in [*np.where(found_markers)][0]:
-        aruco_response=DummyMarkerResponse()
-        aruco_response.found=True
+        aruco_response=FoundMarkerResponse(
+                            found=True,
+        )
+        # aruco_response.found=True
         tf_=getArucoPose(aruco_req.id)
         # aruco_response.pose.position=[tf_.translation.x,tf_.translation.y,tf_.translation.z]
         aruco_response.pose.position=tf_.translation
         aruco_response.pose.orientation=tf_.rotation
     else:
-        aruco_response=DummyMarkerResponse()
-        aruco_response.found=False
-        aruco_response.pose=Pose()
+        aruco_response=FoundMarkerResponse(
+                            found=False,
+                            pose=Pose())
+        # aruco_response.found=False
+        # aruco_response.pose=Pose()
     print(aruco_response)
     return aruco_response
        
@@ -95,7 +97,7 @@ def arucoInquirer():
 
     # rospy.Service('cv_server', cv_server, callback_service)
 
-    rospy.Service(inquiries_service, DummyMarker, arucoInquiriesServer)
+    rospy.Service(INQUIRIES_SERVICE, FoundMarker, arucoInquiriesServer)
     
 ###########################################################
 

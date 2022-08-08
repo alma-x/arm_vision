@@ -2,13 +2,15 @@
 
 import rospy
 import numpy as np
+from math import pi as PI
 # from sensor_msgs.msg import JointState
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Quaternion
 # from tf.transformations import quaternion_from_euler
 from arm_vision.msg import ArucoPoses,FoundArucos
+from arm_vision.srv import ReferenceAcquisition,ReferenceAcquisitionResponse
 import tf2_ros
 # from tf2_msgs.msg import TFMessage
-# from tf import transformations
+from tf.transformations import quaternion_about_axis
 from geometry_msgs.msg import TransformStamped
 
 aruco_topic='/camera_poses'
@@ -17,6 +19,8 @@ base_frame='base_link'
 camera_frame='camera_link'
 # joint_states_topic='/joint_states'
 findings_topic='/found_arucos'
+
+REFERENCES_SERVICE='references'
 
 tf_buffer=None
 tf_listener=None
@@ -93,6 +97,8 @@ INSPECTION_PANEL_BROADCASTED=False
 objects_correctly_broadcasted=True
 objects_to_broadcast=[]
 
+can_reference=False
+
 
 def nameOfMarkerReference(id):
     #TODO: why not working??: return "id_"+str(id)
@@ -161,7 +167,9 @@ def distanceTooBig():
 
 
 def canReference():
-    return True
+    global can_reference
+    can_reference=True
+    return can_reference
 
 
 def assembleFindingsMessage():
@@ -171,12 +179,23 @@ def assembleFindingsMessage():
     return msg
 
 
+def referenceServer(_):
+    TIMEOUT=5
+    global can_reference
+    can_reference=True
+    print("permitting referencing for {} seconds".format(TIMEOUT))
+    start_time=rospy.get_time()
+    while rospy.get_time()-start_time<TIMEOUT:continue
+    can_reference=False
+    return ReferenceAcquisitionResponse(done=True)
+
+
 def broadcastTFMarkers(_):
     global tf_broadcaster
     global found_arucos
     tfs_to_broadcast=[]
 
-    if not (velocityTooBig() and distanceTooBig()) or canReference():
+    if not (velocityTooBig() and distanceTooBig()) and can_reference:
         for current_id,current_pose in arucos_in_sight:
             if not found_arucos[current_id-1][1]:
                 tf_stamped=TransformStamped()
@@ -228,7 +247,7 @@ def broadcastTFMarkers(_):
     #             tf2_ros.ExtrapolationException): pass
 
 
-def updateObjects(_):
+def updateObjectPoses(_):
     # print(found_arucos)
     global objects_to_broadcast
     global objects_correctly_broadcasted
@@ -409,13 +428,12 @@ def computeImuPose():
     tf_stamped.transform.translation.x=0
     tf_stamped.transform.translation.y=0
     tf_stamped.transform.translation.z=-.025
-    object_pose=Pose()
-    object_pose.orientation=found_arucos[reference_id-1][2].orientation
-    #TODO: apply rotation 
-    tf_stamped.transform.rotation.x=object_pose.orientation.x
-    tf_stamped.transform.rotation.y=object_pose.orientation.y
-    tf_stamped.transform.rotation.z=object_pose.orientation.z
-    tf_stamped.transform.rotation.w=object_pose.orientation.w
+    #starting from (0,0,0,1)
+    new_orientation=quaternion_about_axis(PI/2,(1,0,0))
+    tf_stamped.transform.rotation.x=new_orientation[0]
+    tf_stamped.transform.rotation.y=new_orientation[1]
+    tf_stamped.transform.rotation.z=new_orientation[2]
+    tf_stamped.transform.rotation.w=new_orientation[3]
     objects_to_broadcast.append(tf_stamped)
     IMU_BROADCASTED=True
 
@@ -491,6 +509,15 @@ def computeInspectionPanelPose():
     INSPECTION_PANEL_BROADCASTED=True
 
 
+# def cleanObjectPoses(_):
+#TODO: removing tf_static not possible: can reparent it to "" otherwise
+#   could change it into dynamic and wait until expired ("too old tf")
+#     request_cleaning_operation=input("enter {y,Y,yes,YES} to remove all objects' references: ")
+#     if request_cleaning_operation in ['y','yes','Y','YES']:
+#         if input("hit enter to confirm")=="":
+            
+    
+        
 #----------------------------------------------------------
 def arucoReferencer():
     # global joint_velocities
@@ -511,6 +538,8 @@ def arucoReferencer():
     global findings_pub
     findings_pub=rospy.Publisher(findings_topic,FoundArucos,queue_size=1)
 
+    rospy.Service(REFERENCES_SERVICE, ReferenceAcquisition, referenceServer)
+    
     ARUCO_TIMER_DURATION=rospy.Duration(nsecs=2E6)
     #TODO: instead of a timer, should use a service
     #   requested when the robot is not moving, by controller
@@ -523,7 +552,10 @@ def arucoReferencer():
     OBJECTS_TIMER_DURATION=rospy.Duration(secs=2)
     #TODO: could change into broadcasting only objects and only using pose
     #   for scoring the aruco findings
-    update_timer=rospy.Timer(OBJECTS_TIMER_DURATION,updateObjects)
+    update_timer=rospy.Timer(OBJECTS_TIMER_DURATION,updateObjectPoses)
+
+    # CLEANING_TIMER_DURATION=rospy.Duration(nsecs=1E7)
+    # cleaning_timer=rospy.Timer(CLEANING_TIMER_DURATION,cleanObjectPoses,oneshot=True)
 
 #############################################################
 

@@ -11,7 +11,7 @@ from arm_vision.msg import ArucoPoses
 import cv2 
 from cv2 import aruco as aruco
 from cv_bridge import CvBridge, CvBridgeError
-from roscamLibrary3 import nsingleAruRelPos as singleAruRelPos
+# from roscamLibrary3 import nsingleAruRelPos as singleAruRelPos
 
 #------------------------------------------------
 camera_poses_topic='/camera_poses'
@@ -92,6 +92,37 @@ targetList=[[1,50],
             #   'lid':              {'id':9,'size':40,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL},
             #   'lid storage':      {'id':9,'size':50,'aruco_dict':aruco.DICT_ARUCO_ORIGINAL}
             #   }
+
+#TODO: rework this
+#originally: nsingleAruRelPos
+def singleAruRelPos(queryImg,corners,Id,markerSize_mm,camera_matrix,camera_dist_coefs, 
+                     superimpAru='none',tglDrawMark=0,tglDrawCenter=0):
+#    positiion estimation
+    rvecs,tvecs,object_points= aruco.estimatePoseSingleMarkers(corners,markerSize_mm,camera_matrix,camera_dist_coefs)
+    (rvecs - tvecs).any()  # get rid of that nasty numpy value array error
+    
+#    distance [mm]
+    distnc_mm=np.sqrt((tvecs**2).sum())
+#    rotation and projection matrix
+    rotation_matrix = cv2.Rodrigues(rvecs)[0]
+    P = np.hstack((rotation_matrix, np.reshape(tvecs,[3,1])))
+#    euler_angles_degrees = - cv2.decomposeProjectionMatrix(P)[6]
+#    euler_angles_radians = euler_angles_degrees * np.pi / 180
+    
+#    substitute marker with distance of Id
+    # if superimpAru=='distance': queryImg=distOverAruco(round(distnc_mm, 1),corners,queryImg)
+    # elif superimpAru=='marker': queryImg=IdOverAruco(Id,corners,queryImg)
+#    draws axis half of the size of the marker
+    if tglDrawMark:
+        markerDim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)    
+        aruco.drawAxis(queryImg, camera_matrix, camera_dist_coefs, rvecs, tvecs, int(markerDim_px//4))
+
+    if tglDrawCenter:
+        centerx,centery=np.abs(corners[0][0] + corners[0][2])/2
+        markerDim_px = np.sqrt((corners[0][0][0] - corners[0][3][0])**2 + (corners[0][0][1] - corners[0][3][1])**2)
+        queryImg=cv2.circle(queryImg, (int(centerx),int(centery)),int(markerDim_px/16),(255,255,0),-1)
+        
+    return queryImg,distnc_mm,P
 
 #----------------------------------------
 
