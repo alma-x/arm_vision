@@ -98,7 +98,7 @@ objects_correctly_broadcasted=True
 objects_to_broadcast=[]
 
 can_reference=False
-override_reference_timeout=False
+OVERRIDE_REFERENCES_TIMEOUT=False
 REFERENCE_TIMEOUT=5
 
 
@@ -177,7 +177,7 @@ def assembleFindingsMessage():
 
 def referencesServer(permission_signal):
     global can_reference
-    if override_reference_timeout:
+    if OVERRIDE_REFERENCES_TIMEOUT:
         permisison_timeout=REFERENCE_TIMEOUT
     else:permisison_timeout=permission_signal.timeout
     #TODO: timed-out refereing deactivated since it starts
@@ -190,7 +190,7 @@ def referencesServer(permission_signal):
     start_time=rospy.get_time()
     while rospy.get_time()-start_time<permisison_timeout:continue
     can_reference=True
-    rospy.sleep(rospy.Duration(nsecs=1E7))
+    rospy.sleep(rospy.Duration(nsecs=1E5))
     can_reference=False
     # return ReferenceAcquisitionResponse(done=True)
     return True

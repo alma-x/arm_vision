@@ -127,6 +127,8 @@ def singleAruRelPos(queryImg,corners,Id,markerSize_mm,camera_matrix,camera_dist_
 #----------------------------------------
 
 bridge=CvBridge()
+DOWNSIZE_COEFF=2
+if DOWNSIZE_COEFF<1:DOWNSIZE_COEFF=1
 
 def eulerFromRotatioMatrix(R):
     singularity = np.sqrt(R[0,0] * R[0,0] +  R[1,0] * R[1,0])
@@ -147,7 +149,6 @@ def eulerFromRotatioMatrix(R):
     return np.array([teta_x,teta_y,teta_z])   
 
 def cameraCallback(raw_img):
-    SMALLER_DISPLAY=False
     global aruco_pub
     aruco_msg=ArucoPoses()
 
@@ -189,13 +190,15 @@ def cameraCallback(raw_img):
                     aruco_msg.poses.append(aruco_pose)
                     aruco_msg.distances.append(distance_aruco)
                 
-                if SMALLER_DISPLAY:
+                if DOWNSIZE_COEFF>1:
                     aruco_img_size=detAruImg.shape[:2]
-                    detAruImg=cv2.resize(detAruImg,(aruco_img_size[1]//2,aruco_img_size[0]//2))
+                    detAruImg=cv2.resize(detAruImg,(aruco_img_size[1]//DOWNSIZE_COEFF,aruco_img_size[0]//DOWNSIZE_COEFF))
                 display_image=detAruImg
         else:
-            cv_img_size=cv_image.shape[:2]
-            cv_image=cv2.resize(cv_image,(cv_img_size[1]//2,cv_img_size[0]//2))
+            if  DOWNSIZE_COEFF>1:
+                cv_img_size=cv_image.shape[:2]
+                # aruco_img_size=detAruImg.shape[:2]
+                cv_image=cv2.resize(cv_image,(cv_img_size[1]//DOWNSIZE_COEFF,cv_img_size[0]//DOWNSIZE_COEFF))
             display_image=cv_image
 
         cv2.imshow('detected markers',display_image)
@@ -212,8 +215,8 @@ def cameraCallback(raw_img):
     
 #-----------------------------------------------------------------
 
-def listener(myCam,myTop,myType,myCallk):
-    node_name='camera_listener'
+def detector(myCam,myTop,myType,myCallk):
+    node_name='camera_detector'
     rospy.init_node(node_name, anonymous=False)
     print('node: {}'.format(node_name))
     print('camera: {}'.format(myCam))
@@ -255,4 +258,4 @@ if __name__ == '__main__':
     myCamera="/camera_image"
     myTopicFull=("/image_raw",Image,cameraCallback)
     
-    listener(myCamera,myTopicFull[0],myTopicFull[1],myTopicFull[2])
+    detector(myCamera,myTopicFull[0],myTopicFull[1],myTopicFull[2])
