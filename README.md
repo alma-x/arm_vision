@@ -15,6 +15,8 @@ REFERENCER
 
 - change to correct MAX_MID_PANEL_ARUCO_ID to 9
 
+- imu_ has velcro, should consider it for model and position
+
 INQUIRER+DETECTOR:
 - should grant one of this to the ability to stop the robot when a new marker is found (as originally done)?
 

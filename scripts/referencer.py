@@ -190,7 +190,7 @@ def referencesServer(permission_signal):
     start_time=rospy.get_time()
     while rospy.get_time()-start_time<permisison_timeout:continue
     can_reference=True
-    rospy.sleep(rospy.Duration(nsecs=1E5))
+    rospy.sleep(rospy.Duration(nsecs=1E8))
     can_reference=False
     # return ReferenceAcquisitionResponse(done=True)
     return True
