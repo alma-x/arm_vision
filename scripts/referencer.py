@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from traceback import print_tb
 import rospy
 import numpy as np
 from math import pi as PI
@@ -61,7 +62,7 @@ markers_dict={'id_1':           1,
               }
 
 MAX_MID_PANEL_ARUCO_ID=4
-# MAX_MID_PANEL_ARUCO_ID=9
+REAL_MAX_MID_PANEL_ARUCO_ID=9
 objects_markers={'table_':            [10,14],
                 #  'robot_frame':[id for id in range(1,MAX_MID_PANEL_ARUCO_ID+1)],
                  'mid_panel':[marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
@@ -78,13 +79,22 @@ objects_markers={'table_':            [10,14],
                 'left_panel':          [11],
                 'right_panel':        [12,13],
                 'inspection_panel':   [12,13],
-                'lid_':               [13]}
+                'lid_':               [13],
+                'lid_storage':         [14]}
+#TODO add service which returns required marker ids for a  given object
+#TODO it would be nice also a service returning objects' reference name, given a query string
 
 MAX_ARUCO_ID=14
 arucos_in_sight=[]
 DEFAULT_IN_SIGHT=False
-found_arucos=[[aruco_id,DEFAULT_IN_SIGHT,Pose()] for aruco_id in range(1,MAX_ARUCO_ID+1)]
+found_arucos=[[aruco_id,
+                DEFAULT_IN_SIGHT,
+                # DEFAULT_IN_SIGHT if (aruco_id=<MAX_MID_PANEL_ARUCO_ID or aruco_id>REAL_MAX_MID_PANEL_ARUCO_ID) else True ,
+                Pose()] for aruco_id in range(1,MAX_ARUCO_ID+1)]
+for not_present in range(MAX_MID_PANEL_ARUCO_ID,REAL_MAX_MID_PANEL_ARUCO_ID): found_arucos[not_present][1]=True
 
+
+#TODO initialization by trying to read an existing reference
 TABLE_BROADCASTED=False
 ROBOT_FRAME_BROADCASTED=False
 MID_PANEL_BROADCASTED=False
@@ -94,6 +104,7 @@ IMU_BROADCASTED=False
 RIGHT_PANEL_BROADCASTED=False
 LID_BROADCASTED=False
 INSPECTION_PANEL_BROADCASTED=False
+LID_STORAGE_BROADCASTED=False
 objects_correctly_broadcasted=True
 objects_to_broadcast=[]
 
@@ -118,7 +129,7 @@ def getMarkersInSight(aruco_msg):
 
 
 def transformCameraToReference(target_frame):
-    global tf_buffer
+    # global tf_buffer
     # has .transform.{translation.{x,y,z},rotation.{x,y,z,w}
     while True:
         try:
@@ -302,6 +313,11 @@ def updateObjectPoses(_):
     all([found_arucos[required-1][1] for required in objects_markers['lid_']]):
         print('referencing '+'lid_')
         computeLidPose()
+    
+    if not LID_STORAGE_BROADCASTED and \
+    all([found_arucos[required-1][1] for required in objects_markers['lid_storage']]):
+        print('referencing '+'lid_storage')
+        computeLidStoragePose()
 
     if objects_to_broadcast:
         try:
@@ -513,6 +529,23 @@ def computeInspectionPanelPose():
     tf_stamped.transform.rotation.w=1
     objects_to_broadcast.append(tf_stamped)
     INSPECTION_PANEL_BROADCASTED=True
+
+
+def computeLidStoragePose():
+    global objects_to_broadcast
+    global LID_STORAGE_BROADCASTED
+    reference_id=14
+    tf_stamped=TransformStamped()
+    tf_stamped.header.stamp=rospy.Time.now()
+    current_frame="lid_storage"
+    tf_stamped.child_frame_id=current_frame
+    tf_stamped.header.frame_id="id_"+str(reference_id)
+    tf_stamped.transform.translation.x=.068
+    tf_stamped.transform.translation.y=-.068
+    tf_stamped.transform.translation.z=0
+    tf_stamped.transform.rotation.w=1
+    objects_to_broadcast.append(tf_stamped)
+    LID_STORAGE_BROADCASTED=True
 
 
 # def cleanObjectPoses(_):

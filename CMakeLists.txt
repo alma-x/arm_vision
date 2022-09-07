@@ -33,6 +33,7 @@ add_service_files(
   FILES
   FoundMarker.srv
   ReferenceAcquisition.srv
+  ErcAruco.srv
 )
 
 #msg and srv
