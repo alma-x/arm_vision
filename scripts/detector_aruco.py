@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from ctypes.wintypes import SMALL_RECT
 import rospy
 import numpy as np
 from sensor_msgs.msg import Image

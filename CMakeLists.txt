@@ -67,7 +67,6 @@ catkin_install_python(
   scripts/detector_aruco.py
   scripts/inquirer_aruco.py
   scripts/referencer.py
-  # scripts/roscamLibrary3.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

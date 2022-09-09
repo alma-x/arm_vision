@@ -117,22 +117,21 @@ def scoreServiceClient():
         score_request.tag2=positionToArray(arucoInquiriesRoutine(2).pose.position)
         score_request.tag3=positionToArray(arucoInquiriesRoutine(3).pose.position)
         score_request.tag4=positionToArray(arucoInquiriesRoutine(4).pose.position)
-        # score_request.tag5=positionToArray(arucoInquiriesRoutine(5).pose.position)
-        # score_request.tag6=positionToArray(arucoInquiriesRoutine(6).pose.position)
-        # score_request.tag7=positionToArray(arucoInquiriesRoutine(7).pose.position)
-        # score_request.tag8=positionToArray(arucoInquiriesRoutine(8).pose.position)
-        # score_request.tag9=positionToArray(arucoInquiriesRoutine(9).pose.position)
-        score_request.tag5=[.0,.0,.0]
-        score_request.tag6=[.0,.0,.0]
-        score_request.tag7=[.0,.0,.0]
-        score_request.tag8=[.0,.0,.0]
-        score_request.tag9=[.0,.0,.0]
+        score_request.tag5=positionToArray(arucoInquiriesRoutine(5).pose.position)
+        score_request.tag6=positionToArray(arucoInquiriesRoutine(6).pose.position)
+        score_request.tag7=positionToArray(arucoInquiriesRoutine(7).pose.position)
+        score_request.tag8=positionToArray(arucoInquiriesRoutine(8).pose.position)
+        score_request.tag9=positionToArray(arucoInquiriesRoutine(9).pose.position)
+        # score_request.tag5=[.0,.0,.0]
+        # score_request.tag6=[.0,.0,.0]
+        # score_request.tag7=[.0,.0,.0]
+        # score_request.tag8=[.0,.0,.0]
+        # score_request.tag9=[.0,.0,.0]
         score_request.tag10=positionToArray(arucoInquiriesRoutine(10).pose.position)
         score_request.tag11=positionToArray(arucoInquiriesRoutine(11).pose.position)
         score_request.tag12=positionToArray(arucoInquiriesRoutine(12).pose.position)
         score_request.tag13=positionToArray(arucoInquiriesRoutine(13).pose.position)
         score_request.tag14=positionToArray(arucoInquiriesRoutine(14).pose.position)
-        # print(score_request)
         aruco_score=score_proxy(score_request)
         print('RECEIVED SCORE FOR ENVIRONMENT EXPLORATION: {}'.format(aruco_score))
         score_service_called=True

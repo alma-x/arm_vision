@@ -61,8 +61,9 @@ markers_dict={'id_1':           1,
               'id_14':          14
               }
 
-MAX_MID_PANEL_ARUCO_ID=4
 REAL_MAX_MID_PANEL_ARUCO_ID=9
+MAX_MID_PANEL_ARUCO_ID=REAL_MAX_MID_PANEL_ARUCO_ID
+# MAX_MID_PANEL_ARUCO_ID=4
 objects_markers={'table_':            [10,14],
                 #  'robot_frame':[id for id in range(1,MAX_MID_PANEL_ARUCO_ID+1)],
                  'mid_panel':[marker for marker in range (1,MAX_MID_PANEL_ARUCO_ID+1)],
